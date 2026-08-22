@@ -23,6 +23,32 @@ class ResourceConsistencyTest {
     )
 
     @Test
+    fun `settings and action bar text has the complete English translation contract`() {
+        // Catches missing or mistyped keys that would surface raw translation IDs in the client UI.
+        val translations = Json.parseToJsonElement(
+            Files.readString(soundpack.resolve("assets/biometunes/lang/en_us.json")),
+        ).jsonObject
+        val expected = mapOf(
+            "screen.biometunes.title" to "BiomeTunes Settings",
+            "screen.biometunes.save" to "Save",
+            "screen.biometunes.cancel" to "Cancel",
+            "options.biometunes.enabled" to "Enabled",
+            "options.biometunes.volume" to "Volume: %s%%",
+            "options.biometunes.crossfade" to "Crossfade: %s seconds",
+            "options.biometunes.biome_notifications" to "Biome notifications",
+            "options.biometunes.boss_music" to "Boss music",
+            "options.biometunes.boss_notifications" to "Boss notifications",
+            "message.biometunes.biome" to "Now playing: %s",
+            "message.biometunes.boss" to "Boss music: %s",
+        )
+
+        assertEquals(
+            expected,
+            expected.keys.associateWith { key -> translations[key]?.jsonPrimitive?.content },
+        )
+    }
+
+    @Test
     fun `every catalog track has one canonical streamed sound event ogg subtitle and attribution`() {
         // This fails if a track loses its sound event, OGG, attribution, or translated subtitle.
         val catalogJson = readCatalog()

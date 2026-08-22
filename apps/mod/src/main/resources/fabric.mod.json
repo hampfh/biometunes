@@ -18,6 +18,12 @@
         "adapter": "kotlin",
         "value": "com.hampushallkvist.biometunes.client.BiomeTunesClient"
       }
+    ],
+    "modmenu": [
+      {
+        "adapter": "kotlin",
+        "value": "com.hampushallkvist.biometunes.ui.BiomeTunesModMenu"
+      }
     ]
   },
   "mixins": ["biometunes.client.mixins.json"],
