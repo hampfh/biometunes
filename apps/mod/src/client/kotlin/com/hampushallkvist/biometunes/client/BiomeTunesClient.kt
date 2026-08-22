@@ -17,11 +17,9 @@ import net.fabricmc.fabric.api.resource.ResourceManagerHelper
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.Screen
-import net.minecraft.client.multiplayer.ClientLevel
+import net.minecraft.client.gui.screens.WinScreen
 import net.minecraft.network.chat.Component
-import net.minecraft.resources.ResourceKey
 import net.minecraft.server.packs.PackType
-import net.minecraft.world.level.Level
 import org.slf4j.LoggerFactory
 
 object BiomeTunesClient : ClientModInitializer {
@@ -34,13 +32,8 @@ object BiomeTunesClient : ClientModInitializer {
     private lateinit var sampler: MinecraftContextSampler
     private lateinit var catalogReloadListener: TrackCatalogReloadListener
 
-    private var observedLevel: ClientLevel? = null
-    private var observedDimension: ResourceKey<Level>? = null
+    private val playbackLifecycle = ClientPlaybackLifecycle(CONTEXT_SAMPLE_INTERVAL_TICKS)
     private var cachedContext: PlayerContext? = null
-    private var ticksSinceSample = 0
-
-    @Volatile
-    private var forceResample = true
 
     override fun onInitializeClient() {
         val client = Minecraft.getInstance()
@@ -53,11 +46,15 @@ object BiomeTunesClient : ClientModInitializer {
         audioAdapter = MinecraftAudioAdapter(client)
         director = MusicDirector(TrackResolver(), PlaybackController(audioAdapter))
         sampler = MinecraftContextSampler(client)
-        catalogReloadListener = TrackCatalogReloadListener(reloadableCatalog) {
-            audioAdapter.clearUnavailableSounds()
-            director.stop()
-            forceResample = true
-        }
+        catalogReloadListener = TrackCatalogReloadListener(
+            state = reloadableCatalog,
+            onReload = audioAdapter::clearUnavailableSounds,
+            onAccepted = {
+                director.stop()
+                cachedContext = null
+                playbackLifecycle.forceFreshSample()
+            },
+        )
 
         ResourceManagerHelper.get(PackType.CLIENT_RESOURCES)
             .registerReloadListener(catalogReloadListener)
@@ -91,32 +88,18 @@ object BiomeTunesClient : ClientModInitializer {
 
     private fun tick(client: Minecraft) {
         val level = client.level
-        val dimension = level?.dimension()
-        val identityChanged = level !== observedLevel || dimension !== observedDimension
-
-        if (identityChanged) {
-            director.stop()
-            observedLevel = level
-            observedDimension = dimension
+        val lifecycle = playbackLifecycle.tick(
+            levelIdentity = level,
+            dimensionIdentity = level?.dimension(),
+            playerIdentity = client.player,
+            isEndCredits = client.gui.screen() is WinScreen,
+        )
+        if (lifecycle.stopPlayback) director.stop()
+        if (lifecycle.clearContext) {
             cachedContext = null
-            ticksSinceSample = 0
-            forceResample = true
         }
-
-        if (level == null || client.player == null) {
-            director.stop()
-            cachedContext = null
-            ticksSinceSample = 0
-            forceResample = true
-            return
-        }
-
-        if (forceResample) {
-            sampleContext()
-        } else {
-            ticksSinceSample++
-            if (ticksSinceSample >= CONTEXT_SAMPLE_INTERVAL_TICKS) sampleContext()
-        }
+        if (!lifecycle.activeGameplay) return
+        if (lifecycle.sampleContext) cachedContext = sampler.sample()
 
         val catalog = catalogReloadListener.current
         if (catalog == null) {
@@ -129,12 +112,6 @@ object BiomeTunesClient : ClientModInitializer {
                 Component.translatable(notice.translationKey, notice.argument),
             )
         }
-    }
-
-    private fun sampleContext() {
-        cachedContext = sampler.sample()
-        ticksSinceSample = 0
-        forceResample = false
     }
 
     private const val CONTEXT_SAMPLE_INTERVAL_TICKS = 10

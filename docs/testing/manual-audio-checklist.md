@@ -6,7 +6,7 @@
 - Minecraft version: 26.2
 - Operating system: macOS 26.6.2 (build 25G83), arm64
 - Development client: `./gradlew runClient`
-- Automated prerequisite suite: `./gradlew clean build packageSoundpack`
+- Automated prerequisite suite: `./gradlew clean build packageSoundpack verifyDistributionArchives`
 - Automated startup result: PASS — Fabric loaded BiomeTunes 1.0.0, BiomeTunes initialized, resources reloaded, and the sound engine started; the client was then terminated deliberately with Ctrl-C
 - Manual execution status: not yet performed
 

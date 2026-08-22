@@ -39,7 +39,7 @@ Use a Java 25 JDK. The Gradle wrapper provides the rest of the build toolchain.
 For a clean release-equivalent build of both distributions, run:
 
 ```bash
-./gradlew clean build packageSoundpack
+./gradlew clean build packageSoundpack verifyDistributionArchives
 ```
 
 The Fabric artifact is `apps/mod/build/libs/biometunes-1.0.0.jar`, produced by `:apps:mod:jar`. The standalone soundpack is `build/distributions/biometunes-soundpack-1.0.0.zip`, produced by `packageSoundpack`.

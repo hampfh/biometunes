@@ -8,6 +8,7 @@ import net.minecraft.server.packs.resources.ResourceManager
 
 class TrackCatalogReloadListener(
     private val state: ReloadableTrackCatalog,
+    private val onReload: () -> Unit,
     private val onAccepted: () -> Unit,
 ) : SimpleSynchronousResourceReloadListener {
     val current: TrackCatalog?
@@ -17,6 +18,7 @@ class TrackCatalogReloadListener(
         Identifier.fromNamespaceAndPath("biometunes", "tracks")
 
     override fun onResourceManagerReload(manager: ResourceManager) {
+        onReload()
         val id = Identifier.fromNamespaceAndPath("biometunes", "biometunes/tracks.json")
         val loaded: Result<String> = runCatching {
             manager.getResourceOrThrow(id).openAsReader().use { it.readText() }
