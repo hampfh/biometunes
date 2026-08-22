@@ -1,6 +1,7 @@
 package com.hampushallkvist.biometunes.config
 
 import com.hampushallkvist.biometunes.playback.PlaybackOptions
+import java.nio.file.FileSystemException
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.createTempDirectory
@@ -110,6 +111,20 @@ class ConfigStoreTest {
     }
 
     @Test
+    fun `malformed JSON returns defaults and preserves bytes when the warning callback throws`() = withConfigPath { path ->
+        // Catches warning delivery that lets a logger failure replace malformed-file recovery.
+        Files.createDirectories(path.parent)
+        val malformed = "{ \"volume\": 0.5,"
+        Files.writeString(path, malformed)
+
+        val loaded = ConfigStore(path) { _, _ -> throw IllegalStateException("logger failed") }.load()
+
+        assertEquals(BiomeTunesConfig(), loaded)
+        assertTrue(Files.exists(path))
+        assertContentEquals(malformed.encodeToByteArray(), Files.readAllBytes(path))
+    }
+
+    @Test
     fun `save atomically replaces existing config bytes without leaving a temporary file`() = withConfigPath { path ->
         // Catches replacement that preserves stale file content or leaves an interrupted-write temporary sibling.
         Files.createDirectories(path.parent)
@@ -136,6 +151,21 @@ class ConfigStoreTest {
 
         assertTrue(result.isFailure)
         assertEquals(1, warnings.size)
+        assertTrue(Files.isDirectory(path))
+        assertFalse(Files.exists(path.resolveSibling("${path.fileName}.tmp")))
+    }
+
+    @Test
+    fun `failed save preserves its filesystem failure when the warning callback throws`() = withConfigPath { path ->
+        // Catches warning delivery that throws or masks the original failed-save cause.
+        Files.createDirectories(path)
+        val loggerFailure = IllegalStateException("logger failed")
+
+        val result = ConfigStore(path) { _, _ -> throw loggerFailure }.save(BiomeTunesConfig())
+
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is FileSystemException)
+        assertFalse(result.exceptionOrNull() === loggerFailure)
         assertTrue(Files.isDirectory(path))
         assertFalse(Files.exists(path.resolveSibling("${path.fileName}.tmp")))
     }

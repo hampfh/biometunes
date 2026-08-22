@@ -25,7 +25,7 @@ class ConfigStore(
         return runCatching {
             codec.decodeFromString<BiomeTunesConfig>(Files.readString(path)).normalized()
         }.getOrElse { error ->
-            warn("Could not read $path; using defaults without modifying the file", error)
+            warnSafely("Could not read $path; using defaults without modifying the file", error)
             BiomeTunesConfig()
         }
     }
@@ -48,7 +48,11 @@ class ConfigStore(
             Unit
         }.onFailure { error ->
             runCatching { Files.deleteIfExists(temporary) }
-            warn("Could not save $path", error)
+            warnSafely("Could not save $path", error)
         }
+    }
+
+    private fun warnSafely(message: String, error: Throwable) {
+        runCatching { warn(message, error) }
     }
 }
