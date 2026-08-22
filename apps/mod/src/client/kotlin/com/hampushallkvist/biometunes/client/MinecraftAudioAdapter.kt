@@ -5,6 +5,7 @@ import com.hampushallkvist.biometunes.catalog.TrackId
 import com.hampushallkvist.biometunes.playback.AudioAdapter
 import com.hampushallkvist.biometunes.playback.AudioHandle
 import net.minecraft.client.Minecraft
+import net.minecraft.client.sounds.SoundEngine
 import net.minecraft.resources.Identifier
 
 class MinecraftAudioAdapter(private val client: Minecraft) : AudioAdapter {
@@ -24,8 +25,11 @@ class MinecraftAudioAdapter(private val client: Minecraft) : AudioAdapter {
             return null
         }
 
-        return BiomeTunesSoundInstance(location, initialGain).also {
-            client.soundManager.play(it)
+        val instance = BiomeTunesSoundInstance(location, initialGain)
+        return when (client.soundManager.play(instance)) {
+            SoundEngine.PlayResult.STARTED,
+            SoundEngine.PlayResult.STARTED_SILENTLY -> instance
+            SoundEngine.PlayResult.NOT_STARTED -> null
         }
     }
 
