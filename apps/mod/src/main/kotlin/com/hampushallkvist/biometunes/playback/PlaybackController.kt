@@ -47,9 +47,25 @@ class PlaybackController(private val adapter: AudioAdapter) {
                 stop(currentState.current)
             }
             is PlaybackState.Crossfading -> {
-                val bothPlaying = adapter.isPlaying(currentState.outgoing.handle) &&
-                    adapter.isPlaying(currentState.incoming.handle)
-                if (bothPlaying) return false
+                val outgoingPlaying = adapter.isPlaying(currentState.outgoing.handle)
+                val incomingPlaying = adapter.isPlaying(currentState.incoming.handle)
+                if (outgoingPlaying && incomingPlaying) return false
+                if (desired.id == currentState.outgoing.track.id && outgoingPlaying) {
+                    promoteAfterEndedPeer(
+                        desired = currentState.outgoing,
+                        ended = currentState.incoming,
+                        volume = volume,
+                    )
+                    return true
+                }
+                if (desired.id == currentState.incoming.track.id && incomingPlaying) {
+                    promoteAfterEndedPeer(
+                        desired = currentState.incoming,
+                        ended = currentState.outgoing,
+                        volume = volume,
+                    )
+                    return true
+                }
                 stop(currentState.outgoing)
                 stop(currentState.incoming)
             }
@@ -57,6 +73,11 @@ class PlaybackController(private val adapter: AudioAdapter) {
         state = PlaybackState.Idle
         startPlaying(desired, volume)
         return true
+    }
+
+    private fun promoteAfterEndedPeer(desired: ActiveTrack, ended: ActiveTrack, volume: Float) {
+        stop(ended)
+        state = PlaybackState.Playing(applyGain(desired, mixGain = 1f, volume))
     }
 
     private fun updatePlaying(

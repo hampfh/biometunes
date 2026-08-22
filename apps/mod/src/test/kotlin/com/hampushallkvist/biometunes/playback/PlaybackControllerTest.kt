@@ -189,6 +189,52 @@ class PlaybackControllerTest {
     }
 
     @Test
+    fun `ended non-desired outgoing promotes live desired incoming without restarting it`() {
+        // Catches a mutation that treats either ended fade owner as a reason to restart the healthy desired OGG.
+        val adapter = FakeAudioAdapter()
+        val controller = PlaybackController(adapter)
+        val options = PlaybackOptions(volume = 0.6f, crossfadeTicks = 100)
+        controller.update(trackA, options)
+        controller.update(trackB, options)
+        repeat(25) { controller.update(trackB, options) }
+        adapter.end(trackA.id)
+
+        controller.update(track("b"), options)
+
+        assertEquals(listOf(trackA.id, trackB.id), adapter.starts)
+        assertEquals(listOf(trackA.id), adapter.stops)
+        assertEquals(setOf(trackB.id), adapter.ownedTrackIds)
+        assertTrue(adapter.isTrackPlaying(trackB.id))
+        assertEquals(0.6f, adapter.gainFor(trackB.id), 0.0001f)
+        assertTrue(adapter.vanillaMusicSuppressed)
+        assertHandleBound(adapter, expected = 1)
+    }
+
+    @Test
+    fun `ended non-desired outgoing after reversal promotes live desired handle without restarting it`() {
+        // Catches a mutation that loses desired ownership when fade roles have been swapped by retargeting.
+        val adapter = FakeAudioAdapter()
+        val controller = PlaybackController(adapter)
+        val options = PlaybackOptions(volume = 0.8f, crossfadeTicks = 100)
+        controller.update(trackA, options)
+        controller.update(trackB, options)
+        repeat(25) { controller.update(trackB, options) }
+        controller.update(track("a"), options)
+        repeat(10) { controller.update(trackA, options) }
+        adapter.end(trackB.id)
+
+        controller.update(trackA, PlaybackOptions(volume = 0.55f, crossfadeTicks = 100))
+
+        assertEquals(listOf(trackA.id, trackB.id), adapter.starts)
+        assertEquals(listOf(trackB.id), adapter.stops)
+        assertEquals(setOf(trackA.id), adapter.ownedTrackIds)
+        assertTrue(adapter.isTrackPlaying(trackA.id))
+        assertEquals(0.55f, adapter.gainFor(trackA.id), 0.0001f)
+        assertTrue(adapter.vanillaMusicSuppressed)
+        assertHandleBound(adapter, expected = 1)
+    }
+
+    @Test
     fun `failed initial start remains idle and explicitly releases vanilla music`() {
         // Catches a mutation that claims music ownership when no custom handle was created.
         val adapter = FakeAudioAdapter()
@@ -384,7 +430,9 @@ private class FakeAudioAdapter : AudioAdapter {
     }
 
     override fun stop(handle: AudioHandle) {
-        val instance = instances.remove(handle as FakeAudioHandle) ?: return
+        val instance = requireNotNull(instances.remove(handle as FakeAudioHandle)) {
+            "attempted to stop an unknown or already-disposed handle $handle"
+        }
         stops += instance.track.id
     }
 
