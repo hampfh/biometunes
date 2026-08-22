@@ -98,8 +98,13 @@ object TrackCatalogParser {
     }
 
     private fun requireNoDuplicateBiomeKeys(json: String) {
-        val duplicate = JsonObjectKeyReader(json).duplicateKeyInRootObject("biomes") ?: return
-        throw IllegalArgumentException("biomes key '$duplicate' is duplicated")
+        val duplicate = JsonObjectKeyReader(json).firstDuplicateInRootObject() ?: return
+        val message = when (duplicate.scope) {
+            "biomes" -> "biomes key '${duplicate.key}' is duplicated"
+            "root" -> "root property '${duplicate.key}' is duplicated"
+            else -> error("Unexpected JSON duplicate scope '${duplicate.scope}'")
+        }
+        throw IllegalArgumentException(message)
     }
 
     private val TRACK_KEY = Regex("[a-z0-9_.-]+")
@@ -133,19 +138,25 @@ private data class RawBiomeTag(
 private class JsonObjectKeyReader(private val source: String) {
     private var index = 0
 
-    fun duplicateKeyInRootObject(property: String): String? {
+    fun firstDuplicateInRootObject(): DuplicateKey? {
         skipWhitespace()
         expect('{')
         skipWhitespace()
         if (consume('}')) return null
+        val rootKeys = mutableSetOf<String>()
 
         while (true) {
             val key = readString()
+            val isDuplicateRootKey = !rootKeys.add(key)
             skipWhitespace()
             expect(':')
             skipWhitespace()
-            if (key == property) return duplicateKeyInObject()
-            skipValue()
+            val duplicateBiomeKey = if (key == "biomes") duplicateKeyInObject() else {
+                skipValue()
+                null
+            }
+            if (isDuplicateRootKey) return DuplicateKey("root", key)
+            if (duplicateBiomeKey != null) return DuplicateKey("biomes", duplicateBiomeKey)
             skipWhitespace()
             if (consume('}')) return null
             expect(',')
@@ -248,4 +259,6 @@ private class JsonObjectKeyReader(private val source: String) {
     private fun skipWhitespace() {
         while (index < source.length && source[index].isWhitespace()) index++
     }
+
+    data class DuplicateKey(val scope: String, val key: String)
 }

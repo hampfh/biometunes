@@ -110,6 +110,81 @@ class TrackCatalogParserTest {
         assertContains(result.exceptionOrNull()!!.message!!, "minecraft:is_overworld")
     }
 
+    @Test
+    fun `rejects duplicate keys within biomes`() {
+        // Catches a mutation that lets a JSON object overwrite a duplicate effective biome key.
+        val result = TrackCatalogParser.parse(
+            minimalCatalog.replace(
+                "\"minecraft:plains\": \"plains\"",
+                "\"minecraft:plains\": \"plains\", \"minecraft:plains\": \"plains\"",
+            ),
+        )
+
+        assertTrue(result.isFailure)
+        assertContains(result.exceptionOrNull()!!.message!!, "minecraft:plains")
+    }
+
+    @Test
+    fun `rejects repeated root biomes properties`() {
+        // Catches a mutation that checks only an earlier biomes object while decoding a later one.
+        val result = TrackCatalogParser.parse(
+            minimalCatalog.replace(
+                """  "biome_tags": [""",
+                """  "biomes": {
+    "minecraft:desert": "plains"
+  },
+  "biome_tags": [""",
+            ),
+        )
+
+        assertTrue(result.isFailure)
+        assertContains(result.exceptionOrNull()!!.message!!, "biomes")
+    }
+
+    @Test
+    fun `rejects escaped-equivalent biome keys`() {
+        // Catches a mutation that compares raw JSON spelling instead of decoded biome-key identifiers.
+        val result = TrackCatalogParser.parse(
+            minimalCatalog.replace(
+                "\"minecraft:plains\": \"plains\"",
+                "\"minecraft:plains\": \"plains\", \"minecraft:\\u0070lains\": \"plains\"",
+            ),
+        )
+
+        assertTrue(result.isFailure)
+        assertContains(result.exceptionOrNull()!!.message!!, "minecraft:plains")
+    }
+
+    @Test
+    fun `rejects escaped-equivalent repeated root biomes properties`() {
+        // Catches a mutation that misses a repeated root property when its JSON spelling is escaped.
+        val result = TrackCatalogParser.parse(
+            minimalCatalog.replace(
+                """  "biome_tags": [""",
+                """  "b\u0069omes": {
+    "minecraft:desert": "plains"
+  },
+  "biome_tags": [""",
+            ),
+        )
+
+        assertTrue(result.isFailure)
+        assertContains(result.exceptionOrNull()!!.message!!, "biomes")
+    }
+
+    @Test
+    fun `parses valid nested JSON and escaped strings`() {
+        // Catches a mutation that treats valid nested values or escaped strings as malformed while scanning keys.
+        val result = TrackCatalogParser.parse(
+            minimalCatalog
+                .replace("\"title\": \"Plains\"", "\"title\": \"Plain\\u0073 \\\"Theme\\\"\"")
+                .replace("\"artist\": \"Abraham Frato\"", "\"artist\": \"Abraham \\\\ Frato\""),
+        )
+
+        assertTrue(result.isSuccess)
+        assertEquals("Plains \"Theme\"", result.getOrThrow().tracks[TrackId("plains")]!!.title)
+    }
+
     private companion object {
         val minimalCatalog = """
             {
