@@ -44,6 +44,9 @@ Social media: [Facebook](https://www.facebook.com/profile.php?id=100010086510387
 **Creator of the following tracks:**
 * Flower forest
 
+#### Legacy soundpack — artist not recorded
+* Forest
+
 ## Imported source
 
 This soundpack was imported from `https://github.com/BiomeTunes/soundpack.git` at commit `e45e65833b2808d53050eccf2bd3f47ad35a397c`.

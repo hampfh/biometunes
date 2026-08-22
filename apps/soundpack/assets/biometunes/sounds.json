@@ -1,212 +1,77 @@
 {
-    "music.ocean": {
-        "category": "music",
-        "subtitle": "BiomeTunes: Ocean soundtrack",
-        "sounds": [
-            {
-                "name": "music/ocean",
-                "stream": "true",
-                "volume": 1.5
-            }
-        ]
-	},
-	"music.warm_ocean": {
-		"category":"music",
-		"subtitle": "BiomeTunes: Warm ocean soundtrack",
-		"sounds": [
-			{
-				"name": "music/warm_ocean",
-				"stream": "true"
-			}
-		]
-	},
-    "music.plains": {
-        "category": "music",
-        "subtitle": "BiomeTunes: Plains soundtrack",
-        "sounds": [
-            {
-                "name": "music/plains",
-                "stream": "true"
-            }
-        ]
-    },
-    "music.desert": {
-        "category": "music",
-        "subtitle": "BiomeTunes: Desert soundtrack",
-        "sounds": [
-            {
-                "name": "music/desert",
-                "stream": "true"
-            }
-        ]
-    },
-    "music.mountains": {
-        "category": "music",
-        "subtitle": "BiomeTunes: Mountains soundtrack",
-        "sounds": [
-            {
-                "name": "music/mountains",
-                "stream": "true"
-            }
-        ]
-    },
-    "music.forest": {
-        "category": "music",
-        "subtitle": "BiomeTunes: Forest soundtrack",
-        "sounds": [
-            {
-                "name": "music/forest",
-                "stream": "true"
-            }
-        ]
-	},
-	"music.flower_forest": {
-		"category": "music",
-		"subtitle": "BiomeTunes: Flower Forest soundtrack",
-		"sounds": [
-			{
-				"name": "music/flower_forest",
-				"stream": "true"
-			}
-		]
-	},
-    "music.birch_forest": {
-        "category": "music",
-        "subtitle": "BiomeTunes: Birch Forest soundtrack",
-        "sounds": [
-            {
-                "name": "music/birch_forest",
-                "stream": "true"
-            }
-        ]
-    },
-    "music.taiga": {
-        "category": "music",
-        "subtitle": "BiomeTunes: Taiga soundtrack",
-        "sounds": [
-            {
-                "name": "music/taiga",
-                "stream": "true"
-            }
-        ]
-    },
-    "music.swamp": {
-        "category": "music",
-        "subtitle": "BiomeTunes: Swamp soundtrack",
-        "sounds": [
-            {
-                "name": "music/swamp",
-                "stream": "true"
-            }
-        ]
-    },
-    "music.nether": {
-        "category": "music",
-        "subtitle": "BiomeTunes: Nether soundtrack",
-        "sounds": [
-            {
-                "name": "music/nether",
-                "stream": "true"
-            }
-        ]
-    },
-    "music.the_end": {
-        "category": "music",
-        "subtitle": "BiomeTunes: End soundtrack",
-        "sounds": [
-            {
-                "name": "music/the_end",
-                "stream": "true"
-            }
-        ]
-    },
-    "music.mushroom_fields": {
-        "category": "music",
-        "subtitle": "BiomeTunes: Mushroom fields soundtrack",
-        "sounds": [
-            {
-                "name": "music/mushroom_fields",
-                "stream": "true"
-            }
-        ]
-    },
-    "music.jungle": {
-        "category": "music",
-        "subtitle": "BiomeTunes: Jungle soundtrack",
-        "sounds": [
-            {
-                "name": "music/jungle",
-                "stream": "true"
-            }
-        ]
-    },
-    "music.savanna": {
-        "category": "music",
-        "subtitle": "BiomeTunes: Savanna soundtrack",
-        "sounds": [
-            {
-                "name": "music/savanna",
-                "stream": "true"
-            }
-        ]
-    },
-    "music.snowy": {
-        "category": "music",
-        "subtitle": "BiomeTunes: Snowy soundtrack",
-        "sounds": [
-            {
-                "name": "music/snowy",
-                "stream": "true"
-            }
-        ]
-	},
-	"music.snowy_ocean": {
-		"category": "music",
-		"subtitle": "BiomeTunes: Snowy ocean soundtrack",
-		"sounds": [
-			{
-				"name": "music/snowy_ocean",
-				"stream": "true"
-			}
-		]
-	},
-    "music.dark_forest": {
-        "category": "music",
-        "subtitle": "BiomeTunes: Dark forest soundtrack",
-        "sounds": [
-            {
-                "name": "music/dark_forest",
-                "stream": "true"
-            }
-        ]
-    },
-    "music.ender_dragon": {
-        "category": "music",
-        "sounds": [
-            {
-                "name": "music/ender_dragon",
-                "stream": "true"
-            }
-        ]
-    },
-    "ambient.beach": {
-        "category": "ambient",
-        "subtitle": "BiomeTunes: Beach ambient",
-        "sounds": [
-            {
-                "name": "ambient/beach",
-                "stream": "true"
-            }
-        ]
-    },
-    "ambient.forest": {
-        "category": "ambient",
-        "subtitle": "BiomeTunes: Forest soundtrack",
-        "sounds": [
-            {
-                "name": "ambient/forest",
-                "stream": "true"
-            }
-        ]
-    }
+  "music.birch_forest": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.birch_forest",
+    "sounds": [{ "name": "biometunes:music/birch_forest", "stream": true }]
+  },
+  "music.dark_forest": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.dark_forest",
+    "sounds": [{ "name": "biometunes:music/dark_forest", "stream": true }]
+  },
+  "music.desert": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.desert",
+    "sounds": [{ "name": "biometunes:music/desert", "stream": true }]
+  },
+  "music.ender_dragon": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.ender_dragon",
+    "sounds": [{ "name": "biometunes:music/ender_dragon", "stream": true }]
+  },
+  "music.flower_forest": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.flower_forest",
+    "sounds": [{ "name": "biometunes:music/flower_forest", "stream": true }]
+  },
+  "music.forest": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.forest",
+    "sounds": [{ "name": "biometunes:music/forest", "stream": true }]
+  },
+  "music.jungle": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.jungle",
+    "sounds": [{ "name": "biometunes:music/jungle", "stream": true }]
+  },
+  "music.mountains": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.mountains",
+    "sounds": [{ "name": "biometunes:music/mountains", "stream": true }]
+  },
+  "music.ocean": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.ocean",
+    "sounds": [{ "name": "biometunes:music/ocean", "stream": true }]
+  },
+  "music.plains": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.plains",
+    "sounds": [{ "name": "biometunes:music/plains", "stream": true }]
+  },
+  "music.savanna": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.savanna",
+    "sounds": [{ "name": "biometunes:music/savanna", "stream": true }]
+  },
+  "music.snowy": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.snowy",
+    "sounds": [{ "name": "biometunes:music/snowy", "stream": true }]
+  },
+  "music.snowy_ocean": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.snowy_ocean",
+    "sounds": [{ "name": "biometunes:music/snowy_ocean", "stream": true }]
+  },
+  "music.the_end": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.the_end",
+    "sounds": [{ "name": "biometunes:music/the_end", "stream": true }]
+  },
+  "music.warm_ocean": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.warm_ocean",
+    "sounds": [{ "name": "biometunes:music/warm_ocean", "stream": true }]
+  }
 }
