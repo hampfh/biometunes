@@ -41,10 +41,7 @@ class ResourceConsistencyTest {
         )
         val tracks = catalogJson.getValue("tracks").jsonArray.map { it.jsonObject }
         val trackIds = tracks.map { it.getValue("id").jsonPrimitive.content }.toSet()
-        val soundEventIds = soundsJson.keys
-            .filter { it.startsWith("music.") }
-            .map { it.removePrefix("music.") }
-            .toSet()
+        val expectedSoundEventKeys = expectedTrackIds.map { "music.$it" }.toSet()
         val oggTrackIds = Files.list(soundpack.resolve("assets/biometunes/sounds/music")).use { paths ->
             paths.filter { Files.isRegularFile(it) && it.extension == "ogg" }
                 .map { it.nameWithoutExtension }
@@ -52,8 +49,12 @@ class ResourceConsistencyTest {
                 .toSet()
         }
 
+        // Catches a duplicate or otherwise extra catalog track entry.
+        assertEquals(15, tracks.size, "catalog must contain exactly 15 track entries")
+        assertEquals(tracks.size, trackIds.size, "catalog track IDs must be unique")
         assertEquals(expectedTrackIds, trackIds)
-        assertEquals(expectedTrackIds, soundEventIds)
+        // Catches any non-music or otherwise extra sound-event key in sounds.json.
+        assertEquals(expectedSoundEventKeys, soundsJson.keys)
         assertEquals(expectedTrackIds, oggTrackIds)
 
         tracks.forEach { track ->
