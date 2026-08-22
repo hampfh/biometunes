@@ -15,7 +15,7 @@ class MusicDirector(
     private val playback: PlaybackController,
 ) {
     private var cachedResolution: CachedResolution? = null
-    private var lastNotificationKey: String? = null
+    private var lastNotificationState: NotificationState? = null
 
     fun tick(
         context: PlayerContext?,
@@ -30,13 +30,13 @@ class MusicDirector(
         val resolved = resolve(context, catalog, config.bossMusic)
         playback.update(resolved.track, config.playbackOptions)
 
-        if (resolved.notificationKey == lastNotificationKey) return null
-        lastNotificationKey = resolved.notificationKey
-
         val shouldNotify = when (resolved.source) {
             SelectionSource.BOSS -> config.bossNotifications
             else -> config.biomeNotifications
         }
+        val notificationState = NotificationState(resolved.notificationKey, shouldNotify)
+        if (notificationState == lastNotificationState) return null
+        lastNotificationState = notificationState
         if (!shouldNotify) return null
 
         val translationKey = when (resolved.source) {
@@ -49,7 +49,7 @@ class MusicDirector(
     fun stop() {
         playback.stop()
         cachedResolution = null
-        lastNotificationKey = null
+        lastNotificationState = null
     }
 
     private fun resolve(
@@ -71,6 +71,11 @@ class MusicDirector(
         }
     }
 }
+
+private data class NotificationState(
+    val key: String,
+    val enabled: Boolean,
+)
 
 private data class CachedResolution(
     val context: PlayerContext,

@@ -81,6 +81,60 @@ class MusicDirectorTest {
     }
 
     @Test
+    fun `enabling biome notifications emits once for an unchanged biome and can be repeated after disabling`() {
+        // Catches key-only de-duplication that consumes a biome notice while its family is disabled.
+        val adapter = DirectorAudioAdapter()
+        val director = director(adapter)
+
+        val notices = listOf(
+            director.tick(plains, catalog, config(biomeNotifications = false)),
+            director.tick(plains, catalog, config(biomeNotifications = true)),
+            director.tick(plains, catalog, config(biomeNotifications = true)),
+            director.tick(plains, catalog, config(biomeNotifications = false)),
+            director.tick(plains, catalog, config(biomeNotifications = true)),
+        )
+
+        assertEquals(
+            listOf(
+                null,
+                PlayerNotice("message.biometunes.biome", "Forest Song"),
+                null,
+                null,
+                PlayerNotice("message.biometunes.biome", "Forest Song"),
+            ),
+            notices,
+        )
+        assertEquals(listOf(forest.id), adapter.starts)
+    }
+
+    @Test
+    fun `enabling boss notifications emits once for an unchanged boss and can be repeated after disabling`() {
+        // Catches key-only de-duplication that consumes a boss notice while its family is disabled.
+        val adapter = DirectorAudioAdapter()
+        val director = director(adapter)
+
+        val notices = listOf(
+            director.tick(dragonOverPlains, catalog, config(bossNotifications = false)),
+            director.tick(dragonOverPlains, catalog, config(bossNotifications = true)),
+            director.tick(dragonOverPlains, catalog, config(bossNotifications = true)),
+            director.tick(dragonOverPlains, catalog, config(bossNotifications = false)),
+            director.tick(dragonOverPlains, catalog, config(bossNotifications = true)),
+        )
+
+        assertEquals(
+            listOf(
+                null,
+                PlayerNotice("message.biometunes.boss", "Dragon Song"),
+                null,
+                null,
+                PlayerNotice("message.biometunes.boss", "Dragon Song"),
+            ),
+            notices,
+        )
+        assertEquals(listOf(dragon.id), adapter.starts)
+    }
+
+    @Test
     fun `boss and biome notification families follow their separate settings`() {
         // Catches use of the biome toggle/key for boss selections or the boss toggle/key for biome selections.
         val adapter = DirectorAudioAdapter()
