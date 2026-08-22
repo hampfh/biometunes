@@ -1,4 +1,6 @@
 {
+  "message.biometunes.biome": "Now playing: %s",
+  "message.biometunes.boss": "Boss music: %s",
   "subtitles.biometunes.music.birch_forest": "BiomeTunes: Birch Forest soundtrack",
   "subtitles.biometunes.music.dark_forest": "BiomeTunes: Dark Forest soundtrack",
   "subtitles.biometunes.music.desert": "BiomeTunes: Desert soundtrack",
