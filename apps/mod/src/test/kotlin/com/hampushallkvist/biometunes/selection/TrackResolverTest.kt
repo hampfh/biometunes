@@ -154,11 +154,12 @@ class TrackResolverTest {
 
     @Test
     fun `real catalog resolves every vanilla biome identifier to its exact configured track`() {
-        // Catches a mutation that drops, rewrites, or fails to resolve any of the 66 vanilla biome IDs.
+        // Catches a mutation that rewrites a catalog mapping and changes resolver output in tandem.
         val expectedBiomes = javaClass.getResourceAsStream("/vanilla-26.2-biomes.txt")!!
             .bufferedReader().readLines().filter(String::isNotBlank)
 
         assertEquals(66, expectedBiomes.size)
+        assertEquals(expectedBiomeTracks.keys, expectedBiomes.toSet())
         expectedBiomes.forEach { biomeId ->
             val resolved = resolver.resolve(
                 context = PlayerContext(
@@ -171,11 +172,81 @@ class TrackResolverTest {
                 bossMusicEnabled = false,
             )
 
+            val expectedTrack = expectedBiomeTracks.getValue(biomeId)
             assertEquals(SelectionSource.EXACT_BIOME, resolved.source, biomeId)
-            assertEquals(catalog.biomes.getValue(biomeId), resolved.track.id, biomeId)
-            assertEquals("track:${catalog.biomes.getValue(biomeId).value}", resolved.notificationKey, biomeId)
+            assertEquals(expectedTrack, resolved.track.id, biomeId)
+            assertEquals("track:${expectedTrack.value}", resolved.notificationKey, biomeId)
         }
     }
+
+    private val expectedBiomeTracks = mapOf(
+        "minecraft:badlands" to TrackId("desert"),
+        "minecraft:bamboo_jungle" to TrackId("jungle"),
+        "minecraft:basalt_deltas" to TrackId("dark_forest"),
+        "minecraft:beach" to TrackId("ocean"),
+        "minecraft:birch_forest" to TrackId("birch_forest"),
+        "minecraft:cherry_grove" to TrackId("flower_forest"),
+        "minecraft:cold_ocean" to TrackId("ocean"),
+        "minecraft:crimson_forest" to TrackId("dark_forest"),
+        "minecraft:dark_forest" to TrackId("dark_forest"),
+        "minecraft:deep_cold_ocean" to TrackId("ocean"),
+        "minecraft:deep_dark" to TrackId("dark_forest"),
+        "minecraft:deep_frozen_ocean" to TrackId("snowy_ocean"),
+        "minecraft:deep_lukewarm_ocean" to TrackId("warm_ocean"),
+        "minecraft:deep_ocean" to TrackId("ocean"),
+        "minecraft:desert" to TrackId("desert"),
+        "minecraft:dripstone_caves" to TrackId("mountains"),
+        "minecraft:end_barrens" to TrackId("the_end"),
+        "minecraft:end_highlands" to TrackId("the_end"),
+        "minecraft:end_midlands" to TrackId("the_end"),
+        "minecraft:eroded_badlands" to TrackId("desert"),
+        "minecraft:flower_forest" to TrackId("flower_forest"),
+        "minecraft:forest" to TrackId("forest"),
+        "minecraft:frozen_ocean" to TrackId("snowy_ocean"),
+        "minecraft:frozen_peaks" to TrackId("snowy"),
+        "minecraft:frozen_river" to TrackId("snowy"),
+        "minecraft:grove" to TrackId("snowy"),
+        "minecraft:ice_spikes" to TrackId("snowy"),
+        "minecraft:jagged_peaks" to TrackId("mountains"),
+        "minecraft:jungle" to TrackId("jungle"),
+        "minecraft:lukewarm_ocean" to TrackId("warm_ocean"),
+        "minecraft:lush_caves" to TrackId("jungle"),
+        "minecraft:mangrove_swamp" to TrackId("forest"),
+        "minecraft:meadow" to TrackId("plains"),
+        "minecraft:mushroom_fields" to TrackId("flower_forest"),
+        "minecraft:nether_wastes" to TrackId("dark_forest"),
+        "minecraft:ocean" to TrackId("ocean"),
+        "minecraft:old_growth_birch_forest" to TrackId("birch_forest"),
+        "minecraft:old_growth_pine_taiga" to TrackId("forest"),
+        "minecraft:old_growth_spruce_taiga" to TrackId("forest"),
+        "minecraft:pale_garden" to TrackId("dark_forest"),
+        "minecraft:plains" to TrackId("plains"),
+        "minecraft:river" to TrackId("ocean"),
+        "minecraft:savanna" to TrackId("savanna"),
+        "minecraft:savanna_plateau" to TrackId("savanna"),
+        "minecraft:small_end_islands" to TrackId("the_end"),
+        "minecraft:snowy_beach" to TrackId("snowy_ocean"),
+        "minecraft:snowy_plains" to TrackId("snowy"),
+        "minecraft:snowy_slopes" to TrackId("snowy"),
+        "minecraft:snowy_taiga" to TrackId("snowy"),
+        "minecraft:soul_sand_valley" to TrackId("dark_forest"),
+        "minecraft:sparse_jungle" to TrackId("jungle"),
+        "minecraft:stony_peaks" to TrackId("mountains"),
+        "minecraft:stony_shore" to TrackId("mountains"),
+        "minecraft:sulfur_caves" to TrackId("mountains"),
+        "minecraft:sunflower_plains" to TrackId("plains"),
+        "minecraft:swamp" to TrackId("forest"),
+        "minecraft:taiga" to TrackId("forest"),
+        "minecraft:the_end" to TrackId("the_end"),
+        "minecraft:the_void" to TrackId("the_end"),
+        "minecraft:warm_ocean" to TrackId("warm_ocean"),
+        "minecraft:warped_forest" to TrackId("dark_forest"),
+        "minecraft:windswept_forest" to TrackId("forest"),
+        "minecraft:windswept_gravelly_hills" to TrackId("mountains"),
+        "minecraft:windswept_hills" to TrackId("mountains"),
+        "minecraft:windswept_savanna" to TrackId("savanna"),
+        "minecraft:wooded_badlands" to TrackId("desert"),
+    )
 
     private fun loadCatalog(): TrackCatalog {
         val repoRoot = Path.of(System.getProperty("biometunes.repoRoot"))
