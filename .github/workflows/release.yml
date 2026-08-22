@@ -22,6 +22,12 @@ jobs:
           expected_version=$(sed -n 's/^mod_version=//p' gradle.properties)
           actual_version=${GITHUB_REF_NAME#v}
           test "$actual_version" = "$expected_version"
+      - name: Check explicit release approval
+        env:
+          RELEASE_APPROVED_TAG: ${{ vars.RELEASE_APPROVED_TAG }}
+        run: |
+          test -n "${RELEASE_APPROVED_TAG:-}"
+          test "$RELEASE_APPROVED_TAG" = "$GITHUB_REF_NAME"
       - run: ./gradlew clean build packageSoundpack
       - name: Publish Fabric JAR to Modrinth
         env:

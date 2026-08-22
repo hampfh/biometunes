@@ -38,3 +38,4 @@ Automated tests and a successful development-client startup can establish prereq
 - PENDING EXTERNAL CONFIGURATION: set the Modrinth project environment to client **required** and server **unsupported**.
 - PENDING RELEASE CREDENTIALS: configure `MODRINTH_TOKEN` and `MODRINTH_PROJECT_ID` only when an authorized maintainer is ready to publish.
 - PENDING RELEASE AUTHORIZATION: do not tag, push, create a GitHub release, or run `:apps:mod:modrinth` until every gate above and all 17 rows are complete.
+- PENDING FAIL-CLOSED APPROVAL: only after all 17 rows pass, the Forest attribution is confirmed, Modrinth environments and credentials are ready, and explicit release authorization is given may an authorized maintainer set the repository Actions variable `RELEASE_APPROVED_TAG` to the exact intended tag (for example, `v1.0.0`). Missing, empty, or mismatched values fail before build and publication. Remove or unset the variable after the release completes.

@@ -44,7 +44,9 @@ For a clean release-equivalent build of both distributions, run:
 
 The Fabric artifact is `apps/mod/build/libs/biometunes-1.0.0.jar`, produced by `:apps:mod:jar`. The standalone soundpack is `build/distributions/biometunes-soundpack-1.0.0.zip`, produced by `packageSoundpack`.
 
-The release workflow only runs for `v*` tags and rejects a tag whose version differs from `mod_version` in `gradle.properties`. Ordinary builds and tests do not need publishing credentials. An actual Modrinth upload additionally requires repository secrets named exactly `MODRINTH_TOKEN` and `MODRINTH_PROJECT_ID`; maintainers must also confirm Modrinth's client environment is **required** and server environment is **unsupported** before publishing.
+The release workflow only runs for `v*` tags and rejects a tag whose version differs from `mod_version` in `gradle.properties`. It is also fail-closed on the repository Actions variable `RELEASE_APPROVED_TAG`: a missing, empty, or non-matching value stops the job before the build and all publication steps. A tag alone never authorizes publication.
+
+Only after all 17 manual checklist rows pass, the Forest attribution wording is confirmed, Modrinth's client environment is **required** and server environment is **unsupported**, publication credentials exist, and explicit release authorization is given may an authorized maintainer set `RELEASE_APPROVED_TAG` to the exact tag name (for example, `v1.0.0`). Remove or unset the variable after that release completes. Ordinary builds and tests do not need publishing credentials; an actual Modrinth upload requires repository secrets named exactly `MODRINTH_TOKEN` and `MODRINTH_PROJECT_ID`.
 
 ## Soundtrack provenance and credits
 
