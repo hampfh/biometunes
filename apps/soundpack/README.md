@@ -1,52 +1,30 @@
-# BiomeTunes soundtracks
-This is a resourcepack associated with the biome-tunes datapack. This pack contains all tracks used in BiomeTunes.  
-  
-**Note: This resourcepack has to be used in conjunction with the datapack to work**
+# BiomeTunes soundpack
+
+This directory is the canonical source for the 15 OGG tracks and sound registry distributed with BiomeTunes 1.0.0. The Fabric build copies it into the client mod JAR; `./gradlew packageSoundpack` also creates a standalone resource-pack ZIP.
+
+Fabric mod users do not install this pack separately. The standalone soundpack only defines the modern 1.0.0 sound events and does not select music by itself. The retained datapack predates this reduced 15-event registry and is archival; this README does not claim the standalone pack is compatible with it.
 
 ## Credits
 
-#### Hampus Hallkvist - Hampfh
-Social media: [website](https://www.hampushallkvist.com) - [twitter](https://twitter.com/Hampfh)  
-* Pack developer
+### Pack development
+
+Hampus Hallkvist (Hampfh) — pack developer ([website](https://www.hampushallkvist.com), [Twitter](https://twitter.com/Hampfh)).
 
 ### Soundtracks
-#### Abraham Frato - Reklawer
-Social media: [instagram](https://www.instagram.com/abefrato/)  
-**Creator of the following tracks:**
-* Plains
-* The end
-* Mountains
-* Dark forest
-* Birch forest
-* Snowy (snowy_taiga, snowy_tundra...)
-* Snowy oceans (frozen_ocean, deep_frozen_ocean...)
 
-#### Martin Ryberg Laude - Mar01
-Social media: [website](https://www.martinryberglaude.com)  
-**Creator of the following tracks:**
-* Desert
-* Ocean
+- Abraham Frato (Reklawer) — Plains, The End, Mountains, Dark Forest, Birch Forest, Snowy (including snowy taiga/plains), and Snowy Ocean (including frozen/deep frozen ocean). ([Instagram](https://www.instagram.com/abefrato/))
+- Martin Ryberg Laude (Mar01) — Desert and Ocean. ([Website](https://www.martinryberglaude.com))
+- Zacharias Frato (Taraneas) — Savanna, Ender Dragon boss fight, Beach (ambient), and Jungle. The legacy source credits Beach even though this 1.0.0 pack contains no separate Beach OGG; the modern catalog maps beach biomes to Ocean.
+- Arman Aspromonti — Warm Ocean. ([YouTube](https://www.youtube.com/channel/UCMDc6vj6B8c7RqOEOfl4Uhg))
+- Edit Lundström (Edito1) — Flower Forest. ([Facebook](https://www.facebook.com/profile.php?id=100010086510387))
+- **Legacy soundpack — artist not recorded** — Forest.
 
-#### Zacharias Frato - Taraneas
-**Creator of the following tracks:**
-* Savanna
-* Enderdragon boss fight
-* Beach (ambient)
-* Jungle
-
-#### Arman Aspromonti
-Social media: [YouTube](https://www.youtube.com/channel/UCMDc6vj6B8c7RqOEOfl4Uhg?)  
-**Creator of the following tracks:**
-* Warm ocean
-
-#### Edit Lundström - Edito1
-Social media: [Facebook](https://www.facebook.com/profile.php?id=100010086510387)  
-**Creator of the following tracks:**
-* Flower forest
-
-#### Legacy soundpack — artist not recorded
-* Forest
+The source README at the imported commit does not attribute `forest.ogg`. “Legacy soundpack — artist not recorded” is a placeholder description of that missing record, not a verified artist credit. A human must confirm the Forest attribution and final wording before any public release.
 
 ## Imported source
 
-This soundpack was imported from `https://github.com/BiomeTunes/soundpack.git` at commit `e45e65833b2808d53050eccf2bd3f47ad35a397c`.
+The audio and original credits were imported from [`BiomeTunes/soundpack`](https://github.com/BiomeTunes/soundpack) at exact commit `e45e65833b2808d53050eccf2bd3f47ad35a397c`. The assets were adapted from the legacy `minecraft` namespace to the `biometunes` namespace for the Fabric rewrite.
+
+## License
+
+The repository distributes this soundpack under the [Apache License 2.0](LICENSE).

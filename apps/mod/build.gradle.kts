@@ -36,6 +36,22 @@ dependencies {
     testImplementation(kotlin("test"))
 }
 
+modrinth {
+    token.set(providers.environmentVariable("MODRINTH_TOKEN"))
+    projectId.set(providers.environmentVariable("MODRINTH_PROJECT_ID"))
+    versionNumber.set(project.version.toString())
+    versionName.set("BiomeTunes ${project.version} for Minecraft 26.2")
+    versionType.set("release")
+    uploadFile.set(tasks.named("jar"))
+    gameVersions.add("26.2")
+    loaders.add("fabric")
+    dependencies {
+        required.project("fabric-api")
+        required.project("fabric-language-kotlin")
+        optional.project("modmenu")
+    }
+}
+
 kotlin {
     jvmToolchain(25)
 }
