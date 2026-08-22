@@ -61,6 +61,10 @@ tasks.test {
     systemProperty("biometunes.repoRoot", rootProject.projectDir.absolutePath)
 }
 
+tasks.check {
+    dependsOn(rootProject.tasks.named("verifyDistributionArchivesContract"))
+}
+
 tasks.processResources {
     inputs.property("version", project.version)
     filesMatching("fabric.mod.json") {
