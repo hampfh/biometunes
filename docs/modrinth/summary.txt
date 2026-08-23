@@ -1,0 +1,1 @@
+Biome-aware original soundtrack for Minecraft. 15 tracks mapped across all 66 vanilla biomes, with true equal-power crossfades between them. Client-side only, so it works in single-player and on unmodified vanilla servers.

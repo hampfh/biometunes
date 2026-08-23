@@ -36,19 +36,40 @@ dependencies {
     testImplementation(kotlin("test"))
 }
 
+// Modrinth release copy lives in docs/modrinth so it is reviewable in the repository
+// rather than typed into the web editor. Pre-1.0 versions publish as beta.
+val modrinthBody = rootProject.layout.projectDirectory.file("docs/modrinth/description.md")
+val modrinthChangelog =
+    rootProject.layout.projectDirectory.file("docs/modrinth/changelog-${project.version}.md")
+
 modrinth {
     token.set(providers.environmentVariable("MODRINTH_TOKEN"))
     projectId.set(providers.environmentVariable("MODRINTH_PROJECT_ID"))
     versionNumber.set(project.version.toString())
     versionName.set("BiomeTunes ${project.version} for Minecraft 26.2")
-    versionType.set("release")
+    versionType.set(if (project.version.toString().startsWith("0.")) "beta" else "release")
     uploadFile.set(tasks.named("jar"))
     gameVersions.add("26.2")
     loaders.add("fabric")
+    changelog.set(providers.fileContents(modrinthChangelog).asText)
+    syncBodyFrom.set(providers.fileContents(modrinthBody).asText)
     dependencies {
         required.project("fabric-api")
         required.project("fabric-language-kotlin")
         optional.project("modmenu")
+    }
+}
+
+// Fail closed rather than silently publishing a version with an empty changelog or
+// blanking the project page, which is what an absent file provider would do.
+tasks.named("modrinth") {
+    doFirst {
+        require(modrinthChangelog.asFile.isFile) {
+            "Missing Modrinth changelog for version ${project.version}: expected ${modrinthChangelog.asFile}"
+        }
+        require(modrinthBody.asFile.isFile) {
+            "Missing Modrinth project description: expected ${modrinthBody.asFile}"
+        }
     }
 }
 

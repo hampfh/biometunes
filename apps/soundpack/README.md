@@ -1,8 +1,8 @@
 # BiomeTunes soundpack
 
-This directory is the canonical source for the 15 OGG tracks and sound registry distributed with BiomeTunes 1.0.0. The Fabric build copies it into the client mod JAR; `./gradlew packageSoundpack` also creates a standalone resource-pack ZIP.
+This directory is the canonical source for the 15 OGG tracks and sound registry distributed with BiomeTunes 0.5. The Fabric build copies it into the client mod JAR; `./gradlew packageSoundpack` also creates a standalone resource-pack ZIP.
 
-Fabric mod users do not install this pack separately. The standalone soundpack only defines the modern 1.0.0 sound events and does not select music by itself. The retained datapack predates this reduced 15-event registry and is archival; this README does not claim the standalone pack is compatible with it.
+Fabric mod users do not install this pack separately. The standalone soundpack only defines the modern 0.5 sound events and does not select music by itself. The retained datapack predates this reduced 15-event registry and is archival; this README does not claim the standalone pack is compatible with it.
 
 ## Credits
 
@@ -14,7 +14,7 @@ Hampus Hallkvist (Hampfh) — pack developer ([website](https://www.hampushallkv
 
 - Abraham Frato (Reklawer) — Plains, The End, Mountains, Dark Forest, Birch Forest, Snowy (including snowy taiga/plains), and Snowy Ocean (including frozen/deep frozen ocean). ([Instagram](https://www.instagram.com/abefrato/))
 - Martin Ryberg Laude (Mar01) — Desert and Ocean. ([Website](https://www.martinryberglaude.com))
-- Zacharias Frato (Taraneas) — Savanna, Ender Dragon boss fight, Beach (ambient), and Jungle. The legacy source credits Beach even though this 1.0.0 pack contains no separate Beach OGG; the modern catalog maps beach biomes to Ocean.
+- Zacharias Frato (Taraneas) — Savanna, Ender Dragon boss fight, Beach (ambient), and Jungle. The legacy source credits Beach even though this 0.5 pack contains no separate Beach OGG; the modern catalog maps beach biomes to Ocean.
 - Arman Aspromonti — Warm Ocean. ([YouTube](https://www.youtube.com/channel/UCMDc6vj6B8c7RqOEOfl4Uhg))
 - Edit Lundström (Edito1) — Flower Forest. ([Facebook](https://www.facebook.com/profile.php?id=100010086510387))
 - **Legacy soundpack — artist not recorded** — Forest.

@@ -1,4 +1,4 @@
-# BiomeTunes 1.0.0 manual audio checklist
+# BiomeTunes 0.5 manual audio checklist
 
 ## Test record
 
@@ -7,7 +7,7 @@
 - Operating system: macOS 26.6.2 (build 25G83), arm64
 - Development client: `./gradlew runClient`
 - Automated prerequisite suite: `./gradlew clean build packageSoundpack verifyDistributionArchives`
-- Automated startup result: PASS — Fabric loaded BiomeTunes 1.0.0, BiomeTunes initialized, resources reloaded, and the sound engine started; the client was then terminated deliberately with Ctrl-C
+- Automated startup result: PASS — Fabric loaded BiomeTunes 0.5, BiomeTunes initialized, resources reloaded, and the sound engine started; the client was then terminated deliberately with Ctrl-C
 - Manual execution status: not yet performed
 
 Automated tests and a successful development-client startup can establish prerequisites, but they cannot establish what a human hears, observes in interactive UI, or experiences in real single-player/multiplayer play. Every row therefore remains `PENDING HUMAN VERIFICATION` until a person performs it. Do not release with any row pending or failed.
@@ -35,7 +35,10 @@ Automated tests and a successful development-client startup can establish prereq
 ## Additional pre-release gates
 
 - PENDING HUMAN VERIFICATION: confirm the artist and approved public wording for the legacy `forest.ogg` attribution.
-- PENDING EXTERNAL CONFIGURATION: set the Modrinth project environment to client **required** and server **unsupported**.
+- PENDING POST-UPLOAD VERIFICATION: Modrinth derives project type and environment from the first uploaded
+  version, not from project settings, so neither can be pre-set. After the first upload, confirm the listing
+  shows type **Mod** and environment client **required** / server **unsupported**, derived from
+  `"environment": "client"` in `fabric.mod.json`.
 - PENDING RELEASE CREDENTIALS: configure `MODRINTH_TOKEN` and `MODRINTH_PROJECT_ID` only when an authorized maintainer is ready to publish.
 - PENDING RELEASE AUTHORIZATION: do not tag, push, create a GitHub release, or run `:apps:mod:modrinth` until every gate above and all 17 rows are complete.
-- PENDING FAIL-CLOSED APPROVAL: only after all 17 rows pass, the Forest attribution is confirmed, Modrinth environments and credentials are ready, and explicit release authorization is given may an authorized maintainer set the repository Actions variable `RELEASE_APPROVED_TAG` to the exact intended tag (for example, `v1.0.0`). Missing, empty, or mismatched values fail before build and publication. Remove or unset the variable after the release completes.
+- PENDING FAIL-CLOSED APPROVAL: only after all 17 rows pass, the Forest attribution is confirmed, Modrinth environments and credentials are ready, and explicit release authorization is given may an authorized maintainer set the repository Actions variable `RELEASE_APPROVED_TAG` to the exact intended tag (for example, `v0.5`). Missing, empty, or mismatched values fail before build and publication. Remove or unset the variable after the release completes.

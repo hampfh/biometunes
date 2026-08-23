@@ -2,7 +2,7 @@
 
 All notable changes to BiomeTunes are documented in this file.
 
-## 1.0.0 - 2026-08-22
+## 0.5 - 2026-08-23
 
 - Rewrote BiomeTunes as a client-only Kotlin mod for Fabric and Minecraft 26.2 while retaining the legacy datapack.
 - Added explicit mappings for all 66 vanilla Minecraft 26.2 biomes, with tag, dimension, and Plains fallbacks.
