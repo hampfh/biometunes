@@ -21,6 +21,7 @@ class MusicDirector(
         context: PlayerContext?,
         catalog: TrackCatalog,
         config: BiomeTunesConfig,
+        paused: Boolean = false,
     ): PlayerNotice? {
         if (context == null || !config.enabled) {
             stop()
@@ -28,7 +29,7 @@ class MusicDirector(
         }
 
         val resolved = resolve(context, catalog, config.bossMusic)
-        playback.update(resolved.track, config.playbackOptions)
+        playback.update(resolved.track, config.playbackOptions, advanceFade = !paused)
 
         val shouldNotify = when (resolved.source) {
             SelectionSource.BOSS -> config.bossNotifications

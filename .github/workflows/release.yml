@@ -32,8 +32,8 @@ jobs:
       - uses: softprops/action-gh-release@v3
         with:
           files: |
-            apps/mod/build/libs/biometunes-1.0.0.jar
-            build/distributions/biometunes-soundpack-1.0.0.zip
+            apps/mod/build/libs/biometunes-*.jar
+            build/distributions/biometunes-soundpack-*.zip
           generate_release_notes: true
       - name: Publish Fabric JAR to Modrinth
         env:

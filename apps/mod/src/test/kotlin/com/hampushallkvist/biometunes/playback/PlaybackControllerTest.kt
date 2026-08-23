@@ -2,6 +2,7 @@ package com.hampushallkvist.biometunes.playback
 
 import com.hampushallkvist.biometunes.catalog.TrackDefinition
 import com.hampushallkvist.biometunes.catalog.TrackId
+import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -9,373 +10,447 @@ import kotlin.test.assertTrue
 
 class PlaybackControllerTest {
     @Test
-    fun `equal power gains retain full endpoint power and avoid a midpoint dip`() {
-        // Catches mutations that swap the sine and cosine curves or use linear fade gains.
-        val start = equalPowerGains(0.0)
-        assertEquals(1f, start.outgoing, 0.0001f)
-        assertEquals(0f, start.incoming, 0.0001f)
+    fun `equal power gain reaches both endpoints and holds constant power across a fade`() {
+        // Catches mutations that invert the curve or use linear fade gains.
+        assertEquals(0f, equalPowerGain(0.0), 0.0001f)
+        assertEquals(0.7071f, equalPowerGain(0.5), 0.0002f)
+        assertEquals(1f, equalPowerGain(1.0), 0.0001f)
 
-        val midpoint = equalPowerGains(0.5)
-        assertEquals(0.7071f, midpoint.outgoing, 0.0002f)
-        assertEquals(0.7071f, midpoint.incoming, 0.0002f)
-
-        val end = equalPowerGains(1.0)
-        assertEquals(0f, end.outgoing, 0.0001f)
-        assertEquals(1f, end.incoming, 0.0001f)
+        for (step in 0..10) {
+            val progress = step / 10.0
+            val outgoing = equalPowerGain(1.0 - progress)
+            val incoming = equalPowerGain(progress)
+            assertEquals(1f, outgoing * outgoing + incoming * incoming, 0.0002f)
+        }
     }
 
     @Test
     fun `idle to playing starts the desired track at normalized configured volume`() {
         // Catches a mutation that starts initial playback muted, unscaled, or above the allowed gain.
-        val adapter = FakeAudioAdapter()
-        val controller = PlaybackController(adapter)
+        val session = Session()
 
-        controller.update(trackA, PlaybackOptions(volume = 1.4f, crossfadeTicks = 100))
+        session.tick(trackA, PlaybackOptions(volume = 1.4f, crossfadeTicks = 100))
 
-        assertEquals(setOf(trackA.id), adapter.ownedTrackIds)
-        assertEquals(1f, adapter.gainFor(trackA.id), 0.0001f)
-        assertTrue(adapter.vanillaMusicSuppressed)
-        assertHandleBound(adapter, expected = 1)
+        assertEquals(setOf(trackA.id), session.adapter.ownedTrackIds)
+        assertEquals(1f, session.adapter.gainFor(trackA.id), 0.0001f)
+        assertTrue(session.adapter.vanillaMusicSuppressed)
+        assertHandleBound(session.adapter, expected = 1)
     }
 
     @Test
     fun `playing update with the same TrackId retains its handle and applies the latest volume`() {
         // Catches object-identity comparison, unnecessary restart, and stale volume application.
-        val adapter = FakeAudioAdapter()
-        val controller = PlaybackController(adapter)
-        controller.update(trackA, PlaybackOptions(volume = 0.8f, crossfadeTicks = 100))
+        val session = Session()
+        session.tick(trackA, PlaybackOptions(volume = 0.8f, crossfadeTicks = 100))
 
-        controller.update(track("a"), PlaybackOptions(volume = 0.35f, crossfadeTicks = 100))
+        session.tick(track("a"), PlaybackOptions(volume = 0.35f, crossfadeTicks = 100))
 
-        assertEquals(listOf(trackA.id), adapter.starts)
-        assertEquals(setOf(trackA.id), adapter.ownedTrackIds)
-        assertEquals(0.35f, adapter.gainFor(trackA.id), 0.0001f)
-        assertTrue(adapter.vanillaMusicSuppressed)
-        assertHandleBound(adapter, expected = 1)
+        assertEquals(listOf(trackA.id), session.adapter.starts)
+        assertEquals(setOf(trackA.id), session.adapter.ownedTrackIds)
+        assertEquals(0.35f, session.adapter.gainFor(trackA.id), 0.0001f)
+        assertTrue(session.adapter.vanillaMusicSuppressed)
+        assertHandleBound(session.adapter, expected = 1)
     }
 
     @Test
     fun `zero duration switch disposes the old handle and starts the new track at full volume`() {
         // Catches a mutation that leaves the outgoing handle alive or starts an immediate switch muted.
-        val adapter = FakeAudioAdapter()
-        val controller = PlaybackController(adapter)
-        controller.update(trackA, PlaybackOptions(volume = 0.8f, crossfadeTicks = 100))
+        val session = Session()
+        session.tick(trackA, PlaybackOptions(volume = 0.8f, crossfadeTicks = 100))
 
-        controller.update(trackB, PlaybackOptions(volume = 0.6f, crossfadeTicks = 0))
+        session.tick(trackB, PlaybackOptions(volume = 0.6f, crossfadeTicks = 0))
 
-        assertEquals(listOf(trackA.id, trackB.id), adapter.starts)
-        assertEquals(listOf(trackA.id), adapter.stops)
-        assertEquals(setOf(trackB.id), adapter.ownedTrackIds)
-        assertEquals(0.6f, adapter.gainFor(trackB.id), 0.0001f)
-        assertTrue(adapter.vanillaMusicSuppressed)
-        assertHandleBound(adapter, expected = 1)
+        assertEquals(listOf(trackA.id, trackB.id), session.adapter.starts)
+        assertEquals(listOf(trackA.id), session.adapter.stops)
+        assertEquals(setOf(trackB.id), session.adapter.ownedTrackIds)
+        assertEquals(0.6f, session.adapter.gainFor(trackB.id), 0.0001f)
+        assertTrue(session.adapter.vanillaMusicSuppressed)
+        assertHandleBound(session.adapter, expected = 1)
     }
 
     @Test
     fun `ordinary 100 tick fade advances to equal power midpoint and completes on tick 100`() {
         // Catches linear gains, off-by-one progress, and failure to dispose the completed outgoing handle.
-        val adapter = FakeAudioAdapter()
-        val controller = PlaybackController(adapter)
+        val session = Session()
         val options = PlaybackOptions(volume = 1f, crossfadeTicks = 100)
-        controller.update(trackA, options)
-        controller.update(trackB, options)
+        session.tick(trackA, options)
+        session.tick(trackB, options)
 
-        repeat(50) { controller.update(trackB, options) }
+        repeat(50) { session.tick(trackB, options) }
 
-        assertEquals(setOf(trackA.id, trackB.id), adapter.ownedTrackIds)
-        assertEquals(0.7071f, adapter.gainFor(trackA.id), 0.0002f)
-        assertEquals(0.7071f, adapter.gainFor(trackB.id), 0.0002f)
-        assertHandleBound(adapter, expected = 2)
+        assertEquals(setOf(trackA.id, trackB.id), session.adapter.ownedTrackIds)
+        assertEquals(0.7071f, session.adapter.gainFor(trackA.id), 0.0002f)
+        assertEquals(0.7071f, session.adapter.gainFor(trackB.id), 0.0002f)
+        assertHandleBound(session.adapter, expected = 2)
 
-        repeat(50) { controller.update(trackB, options) }
+        repeat(50) { session.tick(trackB, options) }
 
-        assertEquals(listOf(trackA.id), adapter.stops)
-        assertEquals(setOf(trackB.id), adapter.ownedTrackIds)
-        assertEquals(1f, adapter.gainFor(trackB.id), 0.0001f)
-        assertTrue(adapter.vanillaMusicSuppressed)
-        assertHandleBound(adapter, expected = 1)
+        assertEquals(listOf(trackA.id), session.adapter.stops)
+        assertEquals(setOf(trackB.id), session.adapter.ownedTrackIds)
+        assertEquals(1f, session.adapter.gainFor(trackB.id), 0.0001f)
+        assertTrue(session.adapter.vanillaMusicSuppressed)
+        assertHandleBound(session.adapter, expected = 1)
+        session.assertNoAudibleJump()
     }
 
     @Test
     fun `crossfade applies current user volume to both unscaled mix gains`() {
         // Catches a mutation that volume-scales only the incoming or outgoing side of a fade.
-        val adapter = FakeAudioAdapter()
-        val controller = PlaybackController(adapter)
-        controller.update(trackA, PlaybackOptions(volume = 1f, crossfadeTicks = 100))
-        controller.update(trackB, PlaybackOptions(volume = 0.9f, crossfadeTicks = 100))
+        val session = Session()
+        session.tick(trackA, PlaybackOptions(volume = 1f, crossfadeTicks = 100))
+        session.tick(trackB, PlaybackOptions(volume = 0.9f, crossfadeTicks = 100))
 
         repeat(50) {
-            controller.update(trackB, PlaybackOptions(volume = 0.4f, crossfadeTicks = 100))
+            session.tick(trackB, PlaybackOptions(volume = 0.4f, crossfadeTicks = 100))
         }
 
-        assertEquals(0.28284f, adapter.gainFor(trackA.id), 0.0002f)
-        assertEquals(0.28284f, adapter.gainFor(trackB.id), 0.0002f)
-        assertHandleBound(adapter, expected = 2)
+        assertEquals(0.28284f, session.adapter.gainFor(trackA.id), 0.0002f)
+        assertEquals(0.28284f, session.adapter.gainFor(trackB.id), 0.0002f)
+        assertHandleBound(session.adapter, expected = 2)
     }
 
     @Test
-    fun `third track interruption stops the quieter handle before retaining the louder origin`() {
-        // Catches a mutation that retains the quieter side or leaks a third live handle on interruption.
-        val adapter = FakeAudioAdapter()
-        val controller = PlaybackController(adapter)
+    fun `third track interruption fades the interrupted pair out instead of cutting one`() {
+        // Catches a regression to stopping the quieter fade owner while it is still audible.
+        val session = Session()
         val options = PlaybackOptions(volume = 1f, crossfadeTicks = 100)
-        controller.update(trackA, options)
-        controller.update(trackB, options)
-        repeat(75) { controller.update(trackB, options) }
-        val retainedGain = adapter.gainFor(trackB.id)
+        session.tick(trackA, options)
+        session.tick(trackB, options)
+        repeat(75) { session.tick(trackB, options) }
 
-        controller.update(trackC, options)
+        session.tick(trackC, options)
 
-        assertEquals(listOf(trackA.id, trackB.id, trackC.id), adapter.starts)
-        assertEquals(listOf(trackA.id), adapter.stops)
-        assertEquals(setOf(trackB.id, trackC.id), adapter.ownedTrackIds)
-        assertEquals(retainedGain, adapter.gainFor(trackB.id), 0.0001f)
-        assertEquals(0f, adapter.gainFor(trackC.id), 0.0001f)
-        assertHandleBound(adapter, expected = 2)
+        assertEquals(listOf(trackA.id, trackB.id, trackC.id), session.adapter.starts)
+        assertTrue(session.adapter.stops.isEmpty())
+        assertEquals(setOf(trackA.id, trackB.id, trackC.id), session.adapter.ownedTrackIds)
+        assertEquals(equalPowerGain(0.25), session.adapter.gainFor(trackA.id), 0.0002f)
+        assertEquals(equalPowerGain(0.75), session.adapter.gainFor(trackB.id), 0.0002f)
+        assertEquals(0f, session.adapter.gainFor(trackC.id), 0.0001f)
+        assertHandleBound(session.adapter, expected = 3)
+
+        repeat(25) { session.tick(trackC, options) }
+
+        assertEquals(listOf(trackA.id), session.adapter.stops)
+        assertEquals(setOf(trackB.id, trackC.id), session.adapter.ownedTrackIds)
+
+        repeat(75) { session.tick(trackC, options) }
+
+        assertEquals(listOf(trackA.id, trackB.id), session.adapter.stops)
+        assertEquals(setOf(trackC.id), session.adapter.ownedTrackIds)
+        assertEquals(1f, session.adapter.gainFor(trackC.id), 0.0001f)
+        session.assertNoAudibleJump()
     }
 
     @Test
-    fun `retargeting the existing outgoing track preserves both gains and reverses toward it`() {
-        // Catches mutations that restart an existing OGG, fail to swap roles, or reset retarget origins.
-        val adapter = FakeAudioAdapter()
-        val controller = PlaybackController(adapter)
+    fun `a fourth track disposes only the quietest voice to bound live handles`() {
+        // Catches an unbounded voice list that can exhaust Minecraft's streaming channel pool.
+        val session = Session()
         val options = PlaybackOptions(volume = 1f, crossfadeTicks = 100)
-        controller.update(trackA, options)
-        controller.update(trackB, options)
-        repeat(25) { controller.update(trackB, options) }
-        val aOrigin = adapter.gainFor(trackA.id)
-        val bOrigin = adapter.gainFor(trackB.id)
+        session.tick(trackA, options)
+        repeat(30) { session.tick(trackB, options) }
+        repeat(10) { session.tick(trackC, options) }
 
-        controller.update(track("a"), options)
+        session.tick(trackD, options)
 
-        assertEquals(listOf(trackA.id, trackB.id), adapter.starts)
-        assertTrue(adapter.stops.isEmpty())
-        assertEquals(aOrigin, adapter.gainFor(trackA.id), 0.0001f)
-        assertEquals(bOrigin, adapter.gainFor(trackB.id), 0.0001f)
-        assertHandleBound(adapter, expected = 2)
+        assertEquals(setOf(trackA.id, trackB.id, trackD.id), session.adapter.ownedTrackIds)
+        assertEquals(listOf(trackC.id), session.adapter.stops)
+        assertHandleBound(session.adapter, expected = 3)
+    }
 
-        repeat(50) { controller.update(trackA, options) }
+    @Test
+    fun `retargeting the existing outgoing track reverses the fade from its current gains`() {
+        // Catches mutations that restart an existing OGG or reset fade progress when roles reverse.
+        val session = Session()
+        val options = PlaybackOptions(volume = 1f, crossfadeTicks = 100)
+        session.tick(trackA, options)
+        session.tick(trackB, options)
+        repeat(25) { session.tick(trackB, options) }
 
-        assertEquals(0.9777f, adapter.gainFor(trackA.id), 0.0003f)
-        assertEquals(0.2706f, adapter.gainFor(trackB.id), 0.0003f)
-        assertHandleBound(adapter, expected = 2)
+        session.tick(track("a"), options)
 
-        repeat(50) { controller.update(trackA, options) }
+        assertEquals(listOf(trackA.id, trackB.id), session.adapter.starts)
+        assertTrue(session.adapter.stops.isEmpty())
+        assertEquals(equalPowerGain(0.76), session.adapter.gainFor(trackA.id), 0.0002f)
+        assertEquals(equalPowerGain(0.24), session.adapter.gainFor(trackB.id), 0.0002f)
+        assertHandleBound(session.adapter, expected = 2)
 
-        assertEquals(listOf(trackB.id), adapter.stops)
-        assertEquals(setOf(trackA.id), adapter.ownedTrackIds)
-        assertEquals(1f, adapter.gainFor(trackA.id), 0.0001f)
-        assertHandleBound(adapter, expected = 1)
+        repeat(24) { session.tick(trackA, options) }
+
+        assertEquals(listOf(trackB.id), session.adapter.stops)
+        assertEquals(setOf(trackA.id), session.adapter.ownedTrackIds)
+        assertEquals(1f, session.adapter.gainFor(trackA.id), 0.0001f)
+        assertHandleBound(session.adapter, expected = 1)
+        session.assertNoAudibleJump()
+    }
+
+    @Test
+    fun `alternating border biomes converge instead of leaving both tracks audible`() {
+        // Catches fade progress that restarts on every reversal and never resolves at a biome border.
+        val session = Session()
+        val options = PlaybackOptions(volume = 1f, crossfadeTicks = 100)
+        session.tick(trackA, options)
+        var desired = trackA
+        repeat(200) { tick ->
+            if (tick % 10 == 0) desired = if (desired === trackA) trackB else trackA
+            session.tick(desired, options)
+        }
+
+        assertTrue(
+            session.largestSecondaryGain < 0.3f,
+            "a second track reached ${session.largestSecondaryGain} while flickering",
+        )
+        assertTrue(session.adapter.gainFor(trackA.id) > 0.9f)
+        assertHandleBound(session.adapter, expected = 1)
     }
 
     @Test
     fun `ended desired instance is disposed and restarted immediately without a duration timer`() {
-        // Catches a mutation that trusts a stale Playing handle or waits for track-duration metadata.
-        val adapter = FakeAudioAdapter()
-        val controller = PlaybackController(adapter)
+        // Catches a mutation that trusts a stale playing handle or waits for track-duration metadata.
+        val session = Session()
         val options = PlaybackOptions(volume = 0.7f, crossfadeTicks = 100)
-        controller.update(trackA, options)
-        adapter.end(trackA.id)
+        session.tick(trackA, options)
+        session.adapter.end(trackA.id)
 
-        controller.update(track("a"), options)
+        session.tick(track("a"), options)
 
-        assertEquals(listOf(trackA.id, trackA.id), adapter.starts)
-        assertEquals(listOf(trackA.id), adapter.stops)
-        assertEquals(setOf(trackA.id), adapter.ownedTrackIds)
-        assertTrue(adapter.isTrackPlaying(trackA.id))
-        assertEquals(0.7f, adapter.gainFor(trackA.id), 0.0001f)
-        assertTrue(adapter.vanillaMusicSuppressed)
-        assertHandleBound(adapter, expected = 1)
+        assertEquals(listOf(trackA.id, trackA.id), session.adapter.starts)
+        assertEquals(listOf(trackA.id), session.adapter.stops)
+        assertEquals(setOf(trackA.id), session.adapter.ownedTrackIds)
+        assertTrue(session.adapter.isTrackPlaying(trackA.id))
+        assertEquals(0.7f, session.adapter.gainFor(trackA.id), 0.0001f)
+        assertTrue(session.adapter.vanillaMusicSuppressed)
+        assertHandleBound(session.adapter, expected = 1)
     }
 
     @Test
-    fun `ended non-desired outgoing promotes live desired incoming without restarting it`() {
-        // Catches a mutation that treats either ended fade owner as a reason to restart the healthy desired OGG.
-        val adapter = FakeAudioAdapter()
-        val controller = PlaybackController(adapter)
+    fun `ended outgoing leaves the incoming fading in rather than jumping it to full volume`() {
+        // Catches a regression that promotes the surviving fade owner straight to full gain.
+        val session = Session()
         val options = PlaybackOptions(volume = 0.6f, crossfadeTicks = 100)
-        controller.update(trackA, options)
-        controller.update(trackB, options)
-        repeat(25) { controller.update(trackB, options) }
-        adapter.end(trackA.id)
+        session.tick(trackA, options)
+        session.tick(trackB, options)
+        repeat(25) { session.tick(trackB, options) }
+        session.adapter.end(trackA.id)
 
-        controller.update(track("b"), options)
+        session.tick(track("b"), options)
 
-        assertEquals(listOf(trackA.id, trackB.id), adapter.starts)
-        assertEquals(listOf(trackA.id), adapter.stops)
-        assertEquals(setOf(trackB.id), adapter.ownedTrackIds)
-        assertTrue(adapter.isTrackPlaying(trackB.id))
-        assertEquals(0.6f, adapter.gainFor(trackB.id), 0.0001f)
-        assertTrue(adapter.vanillaMusicSuppressed)
-        assertHandleBound(adapter, expected = 1)
+        assertEquals(listOf(trackA.id, trackB.id), session.adapter.starts)
+        assertEquals(listOf(trackA.id), session.adapter.stops)
+        assertEquals(setOf(trackB.id), session.adapter.ownedTrackIds)
+        assertEquals(equalPowerGain(0.26) * 0.6f, session.adapter.gainFor(trackB.id), 0.0002f)
+        assertTrue(session.adapter.vanillaMusicSuppressed)
+        assertHandleBound(session.adapter, expected = 1)
+
+        repeat(74) { session.tick(trackB, options) }
+
+        assertEquals(0.6f, session.adapter.gainFor(trackB.id), 0.0001f)
+        session.assertNoAudibleJump()
     }
 
     @Test
-    fun `ended non-desired outgoing after reversal promotes live desired handle without restarting it`() {
-        // Catches a mutation that loses desired ownership when fade roles have been swapped by retargeting.
-        val adapter = FakeAudioAdapter()
-        val controller = PlaybackController(adapter)
+    fun `ended outgoing after reversal leaves the desired track fading rather than jumping`() {
+        // Catches a promotion jump that only shows up once fade roles have reversed.
+        val session = Session()
         val options = PlaybackOptions(volume = 0.8f, crossfadeTicks = 100)
-        controller.update(trackA, options)
-        controller.update(trackB, options)
-        repeat(25) { controller.update(trackB, options) }
-        controller.update(track("a"), options)
-        repeat(10) { controller.update(trackA, options) }
-        adapter.end(trackB.id)
+        session.tick(trackA, options)
+        session.tick(trackB, options)
+        repeat(25) { session.tick(trackB, options) }
+        session.tick(track("a"), options)
+        repeat(10) { session.tick(trackA, options) }
+        session.adapter.end(trackB.id)
 
-        controller.update(trackA, PlaybackOptions(volume = 0.55f, crossfadeTicks = 100))
+        session.tick(trackA, PlaybackOptions(volume = 0.55f, crossfadeTicks = 100))
 
-        assertEquals(listOf(trackA.id, trackB.id), adapter.starts)
-        assertEquals(listOf(trackB.id), adapter.stops)
-        assertEquals(setOf(trackA.id), adapter.ownedTrackIds)
-        assertTrue(adapter.isTrackPlaying(trackA.id))
-        assertEquals(0.55f, adapter.gainFor(trackA.id), 0.0001f)
-        assertTrue(adapter.vanillaMusicSuppressed)
-        assertHandleBound(adapter, expected = 1)
+        assertEquals(listOf(trackA.id, trackB.id), session.adapter.starts)
+        assertEquals(listOf(trackB.id), session.adapter.stops)
+        assertEquals(setOf(trackA.id), session.adapter.ownedTrackIds)
+        assertTrue(session.adapter.isTrackPlaying(trackA.id))
+        assertEquals(equalPowerGain(0.87) * 0.55f, session.adapter.gainFor(trackA.id), 0.0002f)
+        assertTrue(session.adapter.vanillaMusicSuppressed)
+        assertHandleBound(session.adapter, expected = 1)
+    }
+
+    @Test
+    fun `ended incoming restarts at its own fade position without disturbing the outgoing`() {
+        // Catches a mutation that tears down a healthy outgoing track when the incoming loop dies.
+        val session = Session()
+        val options = PlaybackOptions(volume = 0.65f, crossfadeTicks = 100)
+        session.tick(trackA, options)
+        session.tick(trackB, options)
+        repeat(25) { session.tick(trackB, options) }
+        session.adapter.end(trackB.id)
+
+        session.tick(trackB, options)
+
+        assertEquals(listOf(trackA.id, trackB.id, trackB.id), session.adapter.starts)
+        assertEquals(listOf(trackB.id), session.adapter.stops)
+        assertEquals(setOf(trackA.id, trackB.id), session.adapter.ownedTrackIds)
+        assertTrue(session.adapter.isTrackPlaying(trackB.id))
+        assertEquals(equalPowerGain(0.75) * 0.65f, session.adapter.gainFor(trackA.id), 0.0002f)
+        assertEquals(equalPowerGain(0.25) * 0.65f, session.adapter.gainFor(trackB.id), 0.0002f)
+        assertTrue(session.adapter.vanillaMusicSuppressed)
+        assertHandleBound(session.adapter, expected = 2)
+        session.assertNoAudibleJump()
     }
 
     @Test
     fun `failed initial start remains idle and explicitly releases vanilla music`() {
         // Catches a mutation that claims music ownership when no custom handle was created.
-        val adapter = FakeAudioAdapter()
-        adapter.setVanillaMusicSuppressed(true)
-        adapter.rejectedTrackIds += trackA.id
-        val controller = PlaybackController(adapter)
+        val session = Session()
+        session.adapter.setVanillaMusicSuppressed(true)
+        session.adapter.rejectedTrackIds += trackA.id
 
-        controller.update(trackA, PlaybackOptions(volume = 0.8f, crossfadeTicks = 100))
+        session.tick(trackA, PlaybackOptions(volume = 0.8f, crossfadeTicks = 100))
 
-        assertEquals(listOf(trackA.id), adapter.starts)
-        assertTrue(adapter.stops.isEmpty())
-        assertFalse(adapter.vanillaMusicSuppressed)
-        assertEquals(false, adapter.suppressionChanges.last())
-        assertHandleBound(adapter, expected = 0)
+        assertEquals(listOf(trackA.id), session.adapter.starts)
+        assertTrue(session.adapter.stops.isEmpty())
+        assertFalse(session.adapter.vanillaMusicSuppressed)
+        assertEquals(false, session.adapter.suppressionChanges.last())
+        assertHandleBound(session.adapter, expected = 0)
     }
 
     @Test
-    fun `failed incoming start stops the retained outgoing handle and releases vanilla music`() {
-        // Catches a mutation that remains Playing and retries transitions while claiming vanilla ownership.
-        val adapter = FakeAudioAdapter()
-        val controller = PlaybackController(adapter)
+    fun `failed incoming start keeps the current track playing and backs off before retrying`() {
+        // Catches a regression that trades live music for silence when a track cannot be started.
+        val session = Session()
         val options = PlaybackOptions(volume = 0.8f, crossfadeTicks = 100)
-        controller.update(trackA, options)
-        adapter.rejectedTrackIds += trackB.id
+        session.tick(trackA, options)
+        session.adapter.rejectedTrackIds += trackB.id
 
-        controller.update(trackB, options)
+        session.tick(trackB, options)
 
-        assertEquals(listOf(trackA.id, trackB.id), adapter.starts)
-        assertEquals(listOf(trackA.id), adapter.stops)
-        assertFalse(adapter.vanillaMusicSuppressed)
-        assertEquals(false, adapter.suppressionChanges.last())
-        assertHandleBound(adapter, expected = 0)
+        assertEquals(listOf(trackA.id, trackB.id), session.adapter.starts)
+        assertTrue(session.adapter.stops.isEmpty())
+        assertEquals(setOf(trackA.id), session.adapter.ownedTrackIds)
+        assertEquals(0.8f, session.adapter.gainFor(trackA.id), 0.0001f)
+        assertTrue(session.adapter.vanillaMusicSuppressed)
+
+        repeat(20) { session.tick(trackB, options) }
+
+        assertEquals(listOf(trackA.id, trackB.id), session.adapter.starts)
+
+        session.adapter.rejectedTrackIds -= trackB.id
+        session.tick(trackB, options)
+
+        assertEquals(listOf(trackA.id, trackB.id, trackB.id), session.adapter.starts)
+        assertEquals(setOf(trackA.id, trackB.id), session.adapter.ownedTrackIds)
+        assertEquals(0f, session.adapter.gainFor(trackB.id), 0.0001f)
+        session.assertNoAudibleJump()
+    }
+
+    @Test
+    fun `paused ticks hold every gain and resume the fade one step at a time`() {
+        // Catches advancing a fade Minecraft cannot hear, which lands as one step on resume.
+        val session = Session()
+        val options = PlaybackOptions(volume = 1f, crossfadeTicks = 100)
+        session.tick(trackA, options)
+        session.tick(trackB, options)
+        repeat(10) { session.tick(trackB, options) }
+        val pausedOutgoing = session.adapter.gainFor(trackA.id)
+        val pausedIncoming = session.adapter.gainFor(trackB.id)
+
+        repeat(60) { session.tick(trackB, options, advanceFade = false) }
+
+        assertEquals(pausedOutgoing, session.adapter.gainFor(trackA.id), 0.0001f)
+        assertEquals(pausedIncoming, session.adapter.gainFor(trackB.id), 0.0001f)
+        assertHandleBound(session.adapter, expected = 2)
+
+        session.tick(trackB, options)
+
+        assertEquals(equalPowerGain(0.89), session.adapter.gainFor(trackA.id), 0.0002f)
+        assertEquals(equalPowerGain(0.11), session.adapter.gainFor(trackB.id), 0.0002f)
+        session.assertNoAudibleJump()
     }
 
     @Test
     fun `stop disposes both crossfade handles and releases vanilla music idempotently`() {
         // Catches a mutation that cleans up only one state-owned handle or leaves suppression raised.
-        val adapter = FakeAudioAdapter()
-        val controller = PlaybackController(adapter)
+        val session = Session()
         val options = PlaybackOptions(volume = 1f, crossfadeTicks = 100)
-        controller.update(trackA, options)
-        controller.update(trackB, options)
-        repeat(25) { controller.update(trackB, options) }
+        session.tick(trackA, options)
+        session.tick(trackB, options)
+        repeat(25) { session.tick(trackB, options) }
 
-        controller.stop()
-        controller.stop()
+        session.controller.stop()
+        session.controller.stop()
 
-        assertEquals(listOf(trackA.id, trackB.id), adapter.stops)
-        assertFalse(adapter.vanillaMusicSuppressed)
-        assertEquals(false, adapter.suppressionChanges.last())
-        assertHandleBound(adapter, expected = 0)
+        assertEquals(listOf(trackA.id, trackB.id), session.adapter.stops)
+        assertFalse(session.adapter.vanillaMusicSuppressed)
+        assertEquals(false, session.adapter.suppressionChanges.last())
+        assertHandleBound(session.adapter, expected = 0)
     }
 
     @Test
-    fun `ordinary fade duration change immediately divides current elapsed ticks by the new duration`() {
-        // Catches a mutation that captures the original duration or rescales elapsed ticks on config change.
-        val adapter = FakeAudioAdapter()
-        val controller = PlaybackController(adapter)
+    fun `fade duration change alters the remaining rate without moving current gains`() {
+        // Catches rescaling elapsed progress against a new duration, which steps the gains mid-fade.
+        val session = Session()
         val original = PlaybackOptions(volume = 1f, crossfadeTicks = 100)
-        controller.update(trackA, original)
-        controller.update(trackB, original)
-        repeat(24) { controller.update(trackB, original) }
+        session.tick(trackA, original)
+        session.tick(trackB, original)
+        repeat(24) { session.tick(trackB, original) }
 
-        controller.update(trackB, PlaybackOptions(volume = 1f, crossfadeTicks = 50))
+        session.tick(trackB, PlaybackOptions(volume = 1f, crossfadeTicks = 50))
 
-        assertEquals(0.7071f, adapter.gainFor(trackA.id), 0.0002f)
-        assertEquals(0.7071f, adapter.gainFor(trackB.id), 0.0002f)
-        assertHandleBound(adapter, expected = 2)
+        assertEquals(equalPowerGain(0.74), session.adapter.gainFor(trackA.id), 0.0002f)
+        assertEquals(equalPowerGain(0.26), session.adapter.gainFor(trackB.id), 0.0002f)
+        assertHandleBound(session.adapter, expected = 2)
+        // A halved duration doubles the step, so allow one step of the shorter fade.
+        session.assertNoAudibleJump(maxStepGain = 2 * ONE_STEP_GAIN)
     }
 
     @Test
     fun `changing an active fade duration to zero completes it immediately`() {
         // Catches a mutation that divides by zero or waits another captured-duration tick to finish.
-        val adapter = FakeAudioAdapter()
-        val controller = PlaybackController(adapter)
+        val session = Session()
         val options = PlaybackOptions(volume = 1f, crossfadeTicks = 100)
-        controller.update(trackA, options)
-        controller.update(trackB, options)
-        repeat(25) { controller.update(trackB, options) }
+        session.tick(trackA, options)
+        session.tick(trackB, options)
+        repeat(25) { session.tick(trackB, options) }
 
-        controller.update(trackB, PlaybackOptions(volume = 0.45f, crossfadeTicks = 0))
+        session.tick(trackB, PlaybackOptions(volume = 0.45f, crossfadeTicks = 0))
 
-        assertEquals(listOf(trackA.id), adapter.stops)
-        assertEquals(setOf(trackB.id), adapter.ownedTrackIds)
-        assertEquals(0.45f, adapter.gainFor(trackB.id), 0.0001f)
-        assertTrue(adapter.vanillaMusicSuppressed)
-        assertHandleBound(adapter, expected = 1)
+        assertEquals(listOf(trackA.id), session.adapter.stops)
+        assertEquals(setOf(trackB.id), session.adapter.ownedTrackIds)
+        assertEquals(0.45f, session.adapter.gainFor(trackB.id), 0.0001f)
+        assertTrue(session.adapter.vanillaMusicSuppressed)
+        assertHandleBound(session.adapter, expected = 1)
     }
 
     @Test
     fun `zero duration third track interruption disposes both old handles before immediate playback`() {
         // Catches a mutation that applies zero duration only when the desired track is already in the fade.
-        val adapter = FakeAudioAdapter()
-        val controller = PlaybackController(adapter)
+        val session = Session()
         val options = PlaybackOptions(volume = 1f, crossfadeTicks = 100)
-        controller.update(trackA, options)
-        controller.update(trackB, options)
-        repeat(75) { controller.update(trackB, options) }
+        session.tick(trackA, options)
+        session.tick(trackB, options)
+        repeat(75) { session.tick(trackB, options) }
 
-        controller.update(trackC, PlaybackOptions(volume = 0.5f, crossfadeTicks = 0))
+        session.tick(trackC, PlaybackOptions(volume = 0.5f, crossfadeTicks = 0))
 
-        assertEquals(listOf(trackA.id, trackB.id, trackC.id), adapter.starts)
-        assertEquals(setOf(trackA.id, trackB.id), adapter.stops.toSet())
-        assertEquals(setOf(trackC.id), adapter.ownedTrackIds)
-        assertEquals(0.5f, adapter.gainFor(trackC.id), 0.0001f)
-        assertTrue(adapter.vanillaMusicSuppressed)
-        assertHandleBound(adapter, expected = 1)
-    }
-
-    @Test
-    fun `ended desired incoming loop disposes both fade owners and restarts desired immediately`() {
-        // Catches a mutation that advances gains on a dead incoming handle until the fade timer expires.
-        val adapter = FakeAudioAdapter()
-        val controller = PlaybackController(adapter)
-        val options = PlaybackOptions(volume = 0.65f, crossfadeTicks = 100)
-        controller.update(trackA, options)
-        controller.update(trackB, options)
-        repeat(25) { controller.update(trackB, options) }
-        adapter.end(trackB.id)
-
-        controller.update(trackB, options)
-
-        assertEquals(listOf(trackA.id, trackB.id, trackB.id), adapter.starts)
-        assertEquals(listOf(trackA.id, trackB.id), adapter.stops)
-        assertEquals(setOf(trackB.id), adapter.ownedTrackIds)
-        assertTrue(adapter.isTrackPlaying(trackB.id))
-        assertEquals(0.65f, adapter.gainFor(trackB.id), 0.0001f)
-        assertTrue(adapter.vanillaMusicSuppressed)
-        assertHandleBound(adapter, expected = 1)
+        assertEquals(listOf(trackA.id, trackB.id, trackC.id), session.adapter.starts)
+        assertEquals(setOf(trackA.id, trackB.id), session.adapter.stops.toSet())
+        assertEquals(setOf(trackC.id), session.adapter.ownedTrackIds)
+        assertEquals(0.5f, session.adapter.gainFor(trackC.id), 0.0001f)
+        assertTrue(session.adapter.vanillaMusicSuppressed)
+        assertHandleBound(session.adapter, expected = 1)
     }
 
     private fun assertHandleBound(adapter: FakeAudioAdapter, expected: Int) {
         assertEquals(expected, adapter.ownedHandleCount)
-        assertTrue(adapter.ownedHandleCount in 0..2)
-        assertTrue(adapter.maximumOwnedHandleCount in 0..2)
+        assertTrue(adapter.ownedHandleCount in 0..MAX_LIVE_HANDLES)
+        assertTrue(adapter.maximumOwnedHandleCount in 0..MAX_LIVE_HANDLES)
     }
 
     private companion object {
+        const val MAX_LIVE_HANDLES = 3
+
+        /** One tick of a 100 tick fade moves a gain by at most pi/2 * 0.01. */
+        const val ONE_STEP_GAIN = 0.016f
+
         val trackA = track("a")
         val trackB = track("b")
         val trackC = track("c")
+        val trackD = track("d")
 
         fun track(id: String) = TrackDefinition(
             id = TrackId(id),
@@ -383,6 +458,48 @@ class PlaybackControllerTest {
             title = "Track $id",
             artist = "Artist $id",
         )
+    }
+
+    /** Drives the controller a tick at a time and watches the gains it applies for discontinuities. */
+    private class Session {
+        val adapter = FakeAudioAdapter()
+        val controller = PlaybackController(adapter)
+
+        private var previousGains: Map<TrackId, Float> = emptyMap()
+        private var largestJump = 0f
+        private var jumpDescription = ""
+
+        /** Loudest gain reached by anything other than the loudest track, across every tick so far. */
+        var largestSecondaryGain = 0f
+            private set
+
+        fun tick(
+            desired: TrackDefinition,
+            options: PlaybackOptions,
+            advanceFade: Boolean = true,
+        ) {
+            controller.update(desired, options, advanceFade)
+            val gains = adapter.gains()
+            // Only tracks that were already live can jump; starting one is an intentional step, and
+            // a track the audio engine ended is already silent before the controller disposes it.
+            for ((id, before) in previousGains) {
+                if (id in adapter.endedTrackIds) continue
+                val after = gains[id] ?: 0f
+                if (abs(after - before) > largestJump) {
+                    largestJump = abs(after - before)
+                    jumpDescription = "${id.value} moved $before -> $after"
+                }
+            }
+            largestSecondaryGain = maxOf(
+                largestSecondaryGain,
+                gains.values.sortedDescending().drop(1).firstOrNull() ?: 0f,
+            )
+            previousGains = gains
+        }
+
+        fun assertNoAudibleJump(maxStepGain: Float = ONE_STEP_GAIN) {
+            assertTrue(largestJump <= maxStepGain, "gain jumped more than one fade step: $jumpDescription")
+        }
     }
 }
 
@@ -400,8 +517,8 @@ private class FakeAudioAdapter : AudioAdapter {
     var maximumOwnedHandleCount = 0
         private set
     val rejectedTrackIds = mutableSetOf<TrackId>()
+    val endedTrackIds = mutableSetOf<TrackId>()
     val starts = mutableListOf<TrackId>()
-    val gainChanges = mutableListOf<Pair<TrackId, Float>>()
     val stops = mutableListOf<TrackId>()
     val suppressionChanges = mutableListOf<Boolean>()
 
@@ -426,7 +543,6 @@ private class FakeAudioAdapter : AudioAdapter {
     override fun setGain(handle: AudioHandle, gain: Float) {
         val instance = instances.getValue(handle as FakeAudioHandle)
         instance.gain = gain
-        gainChanges += instance.track.id to gain
     }
 
     override fun stop(handle: AudioHandle) {
@@ -440,6 +556,7 @@ private class FakeAudioAdapter : AudioAdapter {
         instances[handle as FakeAudioHandle]?.playing == true
 
     override fun setVanillaMusicSuppressed(suppressed: Boolean) {
+        if (vanillaMusicSuppressed == suppressed) return
         vanillaMusicSuppressed = suppressed
         suppressionChanges += suppressed
     }
@@ -447,8 +564,11 @@ private class FakeAudioAdapter : AudioAdapter {
     fun gainFor(trackId: TrackId): Float =
         instances.values.single { it.track.id == trackId }.gain
 
+    fun gains(): Map<TrackId, Float> = instances.values.associate { it.track.id to it.gain }
+
     fun end(trackId: TrackId) {
         instances.values.single { it.track.id == trackId }.playing = false
+        endedTrackIds += trackId
     }
 
     fun isTrackPlaying(trackId: TrackId): Boolean =

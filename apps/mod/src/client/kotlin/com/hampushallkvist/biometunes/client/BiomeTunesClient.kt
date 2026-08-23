@@ -107,7 +107,7 @@ object BiomeTunesClient : ClientModInitializer {
             return
         }
 
-        director.tick(cachedContext, catalog, currentConfig)?.let { notice ->
+        director.tick(cachedContext, catalog, currentConfig, client.isPaused())?.let { notice ->
             client.player?.sendOverlayMessage(
                 Component.translatable(notice.translationKey, notice.argument),
             )

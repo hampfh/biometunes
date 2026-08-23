@@ -28,13 +28,13 @@
   },
   "mixins": ["biometunes.client.mixins.json"],
   "depends": {
-    "fabricloader": ">=0.19.3",
+    "fabricloader": ">=${loader_version}",
     "fabric-api": "*",
-    "fabric-language-kotlin": ">=1.13.13+kotlin.2.4.10",
-    "minecraft": "~26.2",
+    "fabric-language-kotlin": ">=${fabric_kotlin_version}",
+    "minecraft": "~${minecraft_version}",
     "java": ">=25"
   },
   "suggests": {
-    "modmenu": ">=20.0.1"
+    "modmenu": ">=${modmenu_version}"
   }
 }
