@@ -56,7 +56,7 @@ Fifteen original tracks, written for this project:
 | Track | Composer |
 |---|---|
 | Plains | Abraham Frato (Reklawer) |
-| Forest | *Attribution pending — see note below* |
+| Forest | Abraham Frato (Reklawer) |
 | Birch Forest | Abraham Frato (Reklawer) |
 | Dark Forest | Abraham Frato (Reklawer) |
 | Flower Forest | Edit Lundström (Edito1) |
@@ -72,8 +72,6 @@ Fifteen original tracks, written for this project:
 | Ender Dragon | Zacharias Frato (Taraneas) |
 
 Pack development by Hampus Hallkvist ([Hampfh](https://www.hampushallkvist.com)).
-
-> **Note on Forest:** the historical soundpack this track came from does not record its composer. If you wrote it, or know who did, please [open an issue](https://github.com/BiomeTunes/datapack/issues) so proper credit can be given.
 
 ## Beta status
 

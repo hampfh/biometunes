@@ -14,6 +14,5 @@ First public release of the rewritten BiomeTunes — a client-side Fabric mod fo
 
 - The Wither temporarily shares the Ender Dragon track.
 - Beach biomes map to the Ocean track.
-- The composer of the Forest track is unrecorded; see the project description.
 
 Requires [Fabric API](https://modrinth.com/mod/fabric-api) and [Fabric Language Kotlin](https://modrinth.com/mod/fabric-language-kotlin) on Minecraft 26.2 with Java 25.
