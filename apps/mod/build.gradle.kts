@@ -48,11 +48,10 @@ val manifestValues = mapOf(
     "modmenu_version" to property("modmenu_version") as String,
 )
 
-// Modrinth release copy lives in docs/modrinth so it is reviewable in the repository
+// Modrinth release copy lives beside this build file so it is reviewable in the repository
 // rather than typed into the web editor. Pre-1.0 versions publish as beta.
-val modrinthBody = rootProject.layout.projectDirectory.file("docs/modrinth/description.md")
-val modrinthChangelog =
-    rootProject.layout.projectDirectory.file("docs/modrinth/changelog-${project.version}.md")
+val modrinthBody = layout.projectDirectory.file("modrinth/description.md")
+val modrinthChangelog = layout.projectDirectory.file("modrinth/changelog-${project.version}.md")
 
 modrinth {
     token.set(providers.environmentVariable("MODRINTH_TOKEN"))

@@ -12,7 +12,7 @@ BiomeTunes is a client-only Fabric mod that gives Minecraft 26.2 a soundtrack se
 
 Install the Fabric loader and required dependencies on the client, then place `biometunes-<version>.jar` in the client's `mods` directory. The soundtrack is embedded in the mod JAR, so mod users do not install the standalone soundpack ZIP.
 
-BiomeTunes works in single-player and is client-only by design: it requires no server installation and is intended to connect to an unmodified vanilla Minecraft 26.2 server. A real vanilla-server connection remains a required human pre-release check; see the [manual audio checklist](docs/testing/manual-audio-checklist.md).
+BiomeTunes works in single-player and is client-only by design: it requires no server installation and is intended to connect to an unmodified vanilla Minecraft 26.2 server. A real vanilla-server connection remains a required human pre-release check.
 
 ## Settings
 
@@ -20,11 +20,9 @@ Run the client-side `/biometunes` command to open the settings screen. If Mod Me
 
 ## Repository layout
 
-- `apps/mod` — the Kotlin/Fabric client mod, automated tests, and Modrinth publication configuration.
+- `apps/mod` — the Kotlin/Fabric client mod, automated tests, and the Modrinth release copy in `apps/mod/modrinth`.
 - `apps/soundpack` — the canonical audio/resource source copied into the mod JAR and packaged as a standalone ZIP.
 - `apps/datapack` — the original datapack implementation, retained for legacy users.
-- `docs/modrinth` — the Modrinth project description, per-version changelogs, icon, and publishing checklist.
-- `docs/testing` — the dated pre-release manual verification record.
 - `.github/workflows` — Java 25 build CI and tag-driven release automation.
 
 ## Development
@@ -68,4 +66,4 @@ BiomeTunes is licensed under the [Apache License 2.0](LICENSE).
 
 ## Publishing
 
-BiomeTunes is published on Modrinth as [`biometunes`](https://modrinth.com/project/biometunes). The project description and per-version changelogs live in `docs/modrinth` because they change with the code; the release build republishes the description on every upload, so web-editor edits are overwritten. Set-once settings such as categories, license, and links are managed in the Modrinth web UI. See the [publishing checklist](docs/modrinth/release-checklist.md) for the gates and the release procedure.
+BiomeTunes is published on Modrinth as [`biometunes`](https://modrinth.com/project/biometunes). The project description and per-version changelogs live in `apps/mod/modrinth` because they change with the code; the release build republishes the description on every upload, so web-editor edits are overwritten. Set-once settings such as categories, license, and links are managed in the Modrinth web UI. See [`apps/mod/modrinth/README.md`](apps/mod/modrinth/README.md) for the release gates and procedure.
