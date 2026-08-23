@@ -5,7 +5,7 @@
     { "id": "desert", "sound_event": "biometunes:music.desert", "title": "Desert", "artist": "Martin Ryberg Laude" },
     { "id": "ender_dragon", "sound_event": "biometunes:music.ender_dragon", "title": "Ender Dragon", "artist": "Zacharias Frato" },
     { "id": "flower_forest", "sound_event": "biometunes:music.flower_forest", "title": "Flower Forest", "artist": "Edit Lundström" },
-    { "id": "forest", "sound_event": "biometunes:music.forest", "title": "Forest", "artist": "Legacy soundpack — artist not recorded" },
+    { "id": "forest", "sound_event": "biometunes:music.forest", "title": "Forest", "artist": "Abraham Frato" },
     { "id": "jungle", "sound_event": "biometunes:music.jungle", "title": "Jungle", "artist": "Zacharias Frato" },
     { "id": "mountains", "sound_event": "biometunes:music.mountains", "title": "Mountains", "artist": "Abraham Frato" },
     { "id": "ocean", "sound_event": "biometunes:music.ocean", "title": "Ocean", "artist": "Martin Ryberg Laude" },

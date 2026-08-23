@@ -12,14 +12,11 @@ Hampus Hallkvist (Hampfh) — pack developer ([website](https://www.hampushallkv
 
 ### Soundtracks
 
-- Abraham Frato (Reklawer) — Plains, The End, Mountains, Dark Forest, Birch Forest, Snowy (including snowy taiga/plains), and Snowy Ocean (including frozen/deep frozen ocean). ([Instagram](https://www.instagram.com/abefrato/))
+- Abraham Frato (Reklawer) — Plains, Forest, The End, Mountains, Dark Forest, Birch Forest, Snowy (including snowy taiga/plains), and Snowy Ocean (including frozen/deep frozen ocean). ([Instagram](https://www.instagram.com/abefrato/))
 - Martin Ryberg Laude (Mar01) — Desert and Ocean. ([Website](https://www.martinryberglaude.com))
 - Zacharias Frato (Taraneas) — Savanna, Ender Dragon boss fight, Beach (ambient), and Jungle. The legacy source credits Beach even though this pack contains no separate Beach OGG; the modern catalog maps beach biomes to Ocean.
 - Arman Aspromonti — Warm Ocean. ([YouTube](https://www.youtube.com/channel/UCMDc6vj6B8c7RqOEOfl4Uhg))
 - Edit Lundström (Edito1) — Flower Forest. ([Facebook](https://www.facebook.com/profile.php?id=100010086510387))
-- **Legacy soundpack — artist not recorded** — Forest.
-
-The source README at the imported commit does not attribute `forest.ogg`. “Legacy soundpack — artist not recorded” is a placeholder description of that missing record, not a verified artist credit. A human must confirm the Forest attribution and final wording before any public release.
 
 ## Imported source
 
