@@ -77,7 +77,7 @@ Pack development by Hampus Hallkvist ([Hampfh](https://www.hampushallkvist.com))
 
 ## Beta status
 
-This is version **0.5**, the first public release of the rewritten mod. It is functionally complete but has not yet had a wide audience, so a few things are worth knowing:
+This is the first public release of the rewritten mod. It is functionally complete but has not yet had a wide audience, so a few things are worth knowing:
 
 - **The Wither temporarily uses the Ender Dragon track.** There is no separate Wither recording yet.
 - **Beach biomes use the Ocean track.** The legacy pack's beach recording is not part of this release.

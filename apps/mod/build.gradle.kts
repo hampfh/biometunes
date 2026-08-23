@@ -36,6 +36,18 @@ dependencies {
     testImplementation(kotlin("test"))
 }
 
+val minecraftVersion = property("minecraft_version") as String
+
+// Keep fabric.mod.json's declared versions sourced from gradle.properties so a
+// dependency bump is a one-line change instead of an edit in two places.
+val manifestValues = mapOf(
+    "version" to project.version.toString(),
+    "minecraft_version" to minecraftVersion,
+    "loader_version" to property("loader_version") as String,
+    "fabric_kotlin_version" to property("fabric_kotlin_version") as String,
+    "modmenu_version" to property("modmenu_version") as String,
+)
+
 // Modrinth release copy lives in docs/modrinth so it is reviewable in the repository
 // rather than typed into the web editor. Pre-1.0 versions publish as beta.
 val modrinthBody = rootProject.layout.projectDirectory.file("docs/modrinth/description.md")
@@ -46,10 +58,10 @@ modrinth {
     token.set(providers.environmentVariable("MODRINTH_TOKEN"))
     projectId.set(providers.environmentVariable("MODRINTH_PROJECT_ID"))
     versionNumber.set(project.version.toString())
-    versionName.set("BiomeTunes ${project.version} for Minecraft 26.2")
+    versionName.set("BiomeTunes ${project.version} for Minecraft $minecraftVersion")
     versionType.set(if (project.version.toString().startsWith("0.")) "beta" else "release")
     uploadFile.set(tasks.named("jar"))
-    gameVersions.add("26.2")
+    gameVersions.add(minecraftVersion)
     loaders.add("fabric")
     changelog.set(providers.fileContents(modrinthChangelog).asText)
     syncBodyFrom.set(providers.fileContents(modrinthBody).asText)
@@ -87,9 +99,9 @@ tasks.check {
 }
 
 tasks.processResources {
-    inputs.property("version", project.version)
+    manifestValues.forEach { (key, value) -> inputs.property(key, value) }
     filesMatching("fabric.mod.json") {
-        expand("version" to project.version)
+        expand(manifestValues)
     }
     from(rootProject.file("apps/soundpack/assets")) { into("assets") }
     from(rootProject.file("apps/soundpack/pack.png")) {

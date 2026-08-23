@@ -1,6 +1,6 @@
 # BiomeTunes
 
-BiomeTunes is a client-only Fabric mod that gives Minecraft 26.2 a soundtrack selected from the player's current biome, dimension, or boss encounter. Version 0.5 covers all 66 vanilla 26.2 biomes, crossfades between its 15 included tracks, pauses scheduled vanilla music while it owns playback, and returns control to vanilla music when disabled or stopped. The Wither temporarily uses the Ender Dragon track because the imported soundpack has no separate Wither recording.
+BiomeTunes is a client-only Fabric mod that gives Minecraft 26.2 a soundtrack selected from the player's current biome, dimension, or boss encounter. It covers all 66 vanilla 26.2 biomes, crossfades between its 15 included tracks, pauses scheduled vanilla music while it owns playback, and returns control to vanilla music when disabled or stopped. The Wither temporarily uses the Ender Dragon track because the imported soundpack has no separate Wither recording.
 
 ## Requirements and installation
 
@@ -10,7 +10,7 @@ BiomeTunes is a client-only Fabric mod that gives Minecraft 26.2 a soundtrack se
 - [Fabric Language Kotlin](https://modrinth.com/mod/fabric-language-kotlin) `1.13.13+kotlin.2.4.10` or newer.
 - Optional: [Mod Menu](https://modrinth.com/mod/modmenu) 20.0.1 or newer for a graphical settings entry.
 
-Install the Fabric loader and required dependencies on the client, then place `biometunes-0.5.jar` in the client's `mods` directory. The soundtrack is embedded in the mod JAR, so mod users do not install the standalone soundpack ZIP.
+Install the Fabric loader and required dependencies on the client, then place `biometunes-<version>.jar` in the client's `mods` directory. The soundtrack is embedded in the mod JAR, so mod users do not install the standalone soundpack ZIP.
 
 BiomeTunes works in single-player and is client-only by design: it requires no server installation and is intended to connect to an unmodified vanilla Minecraft 26.2 server. A real vanilla-server connection remains a required human pre-release check; see the [manual audio checklist](docs/testing/manual-audio-checklist.md).
 
@@ -23,7 +23,7 @@ Run the client-side `/biometunes` command to open the settings screen. If Mod Me
 - `apps/mod` — the Kotlin/Fabric client mod, automated tests, and Modrinth publication configuration.
 - `apps/soundpack` — the canonical audio/resource source copied into the mod JAR and packaged as a standalone ZIP.
 - `apps/datapack` — the original datapack implementation, retained for legacy users.
-- `docs/modrinth` — versioned Modrinth listing copy, project metadata, and the publishing checklist.
+- `docs/modrinth` — the Modrinth project description, per-version changelogs, icon, and publishing checklist.
 - `docs/testing` — the dated pre-release manual verification record.
 - `.github/workflows` — Java 25 build CI and tag-driven release automation.
 
@@ -43,11 +43,11 @@ For a clean release-equivalent build of both distributions, run:
 ./gradlew clean build packageSoundpack verifyDistributionArchives
 ```
 
-The Fabric artifact is `apps/mod/build/libs/biometunes-0.5.jar`, produced by `:apps:mod:jar`. The standalone soundpack is `build/distributions/biometunes-soundpack-0.5.zip`, produced by `packageSoundpack`.
+The Fabric artifact is `apps/mod/build/libs/biometunes-<version>.jar`, produced by `:apps:mod:jar`. The standalone soundpack is `build/distributions/biometunes-soundpack-<version>.zip`, produced by `packageSoundpack`. `<version>` is `mod_version` from `gradle.properties`, which is the single source of truth: it flows into the archive names, `fabric.mod.json`, and the Modrinth upload, so bumping the version is a one-line change.
 
 The release workflow only runs for `v*` tags and rejects a tag whose version differs from `mod_version` in `gradle.properties`. It is also fail-closed on the repository Actions variable `RELEASE_APPROVED_TAG`: a missing, empty, or non-matching value stops the job before the build and all publication steps. A tag alone never authorizes publication.
 
-Only after all 17 manual checklist rows pass, the Forest attribution wording is confirmed, publication credentials exist, and explicit release authorization is given may an authorized maintainer set `RELEASE_APPROVED_TAG` to the exact tag name (for example, `v0.5`). Remove or unset the variable after that release completes. Ordinary builds and tests do not need publishing credentials; an actual Modrinth upload requires repository secrets named exactly `MODRINTH_TOKEN` and `MODRINTH_PROJECT_ID`.
+Only after all 17 manual checklist rows pass, the Forest attribution wording is confirmed, publication credentials exist, and explicit release authorization is given may an authorized maintainer set `RELEASE_APPROVED_TAG` to the exact tag name (`v` followed by `mod_version`). Remove or unset the variable after that release completes. Ordinary builds and tests do not need publishing credentials; an actual Modrinth upload requires repository secrets named exactly `MODRINTH_TOKEN` and `MODRINTH_PROJECT_ID`.
 
 ## Soundtrack provenance and credits
 
@@ -56,7 +56,7 @@ The soundpack was imported from [`BiomeTunes/soundpack`](https://github.com/Biom
 - Hampus Hallkvist (Hampfh) — pack developer.
 - Abraham Frato (Reklawer) — Plains, The End, Mountains, Dark Forest, Birch Forest, Snowy, and Snowy Ocean.
 - Martin Ryberg Laude (Mar01) — Desert and Ocean.
-- Zacharias Frato (Taraneas) — Savanna, Ender Dragon boss fight, Beach (ambient), and Jungle. Version 0.5 has no separate Beach OGG and maps beach biomes to Ocean; the Beach credit is retained from the legacy source README.
+- Zacharias Frato (Taraneas) — Savanna, Ender Dragon boss fight, Beach (ambient), and Jungle. This release has no separate Beach OGG and maps beach biomes to Ocean; the Beach credit is retained from the legacy source README.
 - Arman Aspromonti — Warm Ocean.
 - Edit Lundström (Edito1) — Flower Forest.
 
@@ -68,4 +68,4 @@ BiomeTunes is licensed under the [Apache License 2.0](LICENSE).
 
 ## Publishing
 
-BiomeTunes is published on Modrinth as [`biometunes`](https://modrinth.com/project/biometunes). The listing summary, description, per-version changelog, and project metadata are versioned under `docs/modrinth` and are the source of truth; the release build republishes the description on every upload, so web-editor changes are overwritten. See the [publishing checklist](docs/modrinth/release-checklist.md) for the gates and the release procedure.
+BiomeTunes is published on Modrinth as [`biometunes`](https://modrinth.com/project/biometunes). The project description and per-version changelogs live in `docs/modrinth` because they change with the code; the release build republishes the description on every upload, so web-editor edits are overwritten. Set-once settings such as categories, license, and links are managed in the Modrinth web UI. See the [publishing checklist](docs/modrinth/release-checklist.md) for the gates and the release procedure.

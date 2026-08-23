@@ -23,6 +23,10 @@ import org.gradle.api.tasks.bundling.Jar
 import org.gradle.api.tasks.bundling.Zip
 
 plugins {
+    // Gives the root project a `clean` task. Without it `./gradlew clean` never emptied
+    // build/distributions, so stale soundpack ZIPs from older versions accumulated and the
+    // release workflow's archive glob would attach all of them.
+    base
     id("net.fabricmc.fabric-loom") version "1.17.19" apply false
     kotlin("jvm") version "2.4.10" apply false
     kotlin("plugin.serialization") version "2.4.10" apply false
@@ -52,6 +56,7 @@ data class DistributionArchiveInputs(
     val modProjectAudioFiles: Set<Path>,
     val expectedModVersion: String,
     val expectedMinecraftVersion: String,
+    val expectedManifestValues: Map<String, String>,
 )
 
 class DistributionArchiveValidator {
@@ -159,7 +164,11 @@ class DistributionArchiveValidator {
             template.contains(versionPlaceholder),
             "canonical fabric.mod.json template does not contain $versionPlaceholder",
         )
-        val expanded = template.replace(versionPlaceholder, input.expectedModVersion)
+        // Substitute every placeholder processResources declares. Anything left over is a
+        // placeholder the build does not know about, which would ship to players verbatim.
+        val expanded = input.expectedManifestValues.entries.fold(template) { text, (key, value) ->
+            text.replace("\${$key}", value)
+        }
         requireValue(
             !Regex("""\$\{[^}]+}""").containsMatchIn(expanded),
             "canonical fabric.mod.json has an unexpanded placeholder",
@@ -334,6 +343,9 @@ abstract class VerifyDistributionArchives : DefaultTask() {
     @get:Input
     abstract val expectedMinecraftVersion: Property<String>
 
+    @get:Input
+    abstract val expectedManifestValues: MapProperty<String, String>
+
     @TaskAction
     fun verifyArchives() {
         val input = DistributionArchiveInputs(
@@ -350,6 +362,7 @@ abstract class VerifyDistributionArchives : DefaultTask() {
             },
             expectedModVersion = expectedModVersion.get(),
             expectedMinecraftVersion = expectedMinecraftVersion.get(),
+            expectedManifestValues = expectedManifestValues.get(),
         )
         val trackCount = DistributionArchiveValidator().verify(input)
         logger.lifecycle(
@@ -395,6 +408,17 @@ tasks.register<VerifyDistributionArchives>("verifyDistributionArchives") {
     )
     expectedModVersion.set(providers.gradleProperty("mod_version"))
     expectedMinecraftVersion.set(providers.gradleProperty("minecraft_version"))
+    expectedManifestValues.set(
+        providers.provider {
+            mapOf(
+                "version" to providers.gradleProperty("mod_version").get(),
+                "minecraft_version" to providers.gradleProperty("minecraft_version").get(),
+                "loader_version" to providers.gradleProperty("loader_version").get(),
+                "fabric_kotlin_version" to providers.gradleProperty("fabric_kotlin_version").get(),
+                "modmenu_version" to providers.gradleProperty("modmenu_version").get(),
+            )
+        },
+    )
 }
 
 abstract class VerifyDistributionArchivesContract : DefaultTask() {
@@ -436,6 +460,9 @@ abstract class VerifyDistributionArchivesContract : DefaultTask() {
     @get:Input
     abstract val expectedMinecraftVersion: Property<String>
 
+    @get:Input
+    abstract val expectedManifestValues: MapProperty<String, String>
+
     @TaskAction
     fun verifyContract() {
         val validator = DistributionArchiveValidator()
@@ -451,6 +478,7 @@ abstract class VerifyDistributionArchivesContract : DefaultTask() {
             modProjectAudioFiles = emptySet(),
             expectedModVersion = expectedModVersion.get(),
             expectedMinecraftVersion = expectedMinecraftVersion.get(),
+            expectedManifestValues = expectedManifestValues.get(),
         )
         validator.verify(base)
 
@@ -600,4 +628,15 @@ tasks.register<VerifyDistributionArchivesContract>("verifyDistributionArchivesCo
     canonicalIcon.set(layout.projectDirectory.file("apps/soundpack/pack.png"))
     expectedModVersion.set(providers.gradleProperty("mod_version"))
     expectedMinecraftVersion.set(providers.gradleProperty("minecraft_version"))
+    expectedManifestValues.set(
+        providers.provider {
+            mapOf(
+                "version" to providers.gradleProperty("mod_version").get(),
+                "minecraft_version" to providers.gradleProperty("minecraft_version").get(),
+                "loader_version" to providers.gradleProperty("loader_version").get(),
+                "fabric_kotlin_version" to providers.gradleProperty("fabric_kotlin_version").get(),
+                "modmenu_version" to providers.gradleProperty("modmenu_version").get(),
+            )
+        },
+    )
 }

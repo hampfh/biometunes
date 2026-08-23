@@ -19,8 +19,8 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: biometunes-fabric
-          path: apps/mod/build/libs/biometunes-0.5.jar
+          path: apps/mod/build/libs/biometunes-*.jar
       - uses: actions/upload-artifact@v4
         with:
           name: biometunes-soundpack
-          path: build/distributions/biometunes-soundpack-0.5.zip
+          path: build/distributions/biometunes-soundpack-*.zip
