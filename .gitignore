@@ -5,3 +5,8 @@ build/
 **/build/
 run/
 *.log
+
+.kotlin
+
+.superpowers
+docs
