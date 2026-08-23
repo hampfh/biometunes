@@ -38,15 +38,10 @@ dependencies {
 
 val minecraftVersion = property("minecraft_version") as String
 
-// Keep fabric.mod.json's declared versions sourced from gradle.properties so a
-// dependency bump is a one-line change instead of an edit in two places.
-val manifestValues = mapOf(
-    "version" to project.version.toString(),
-    "minecraft_version" to minecraftVersion,
-    "loader_version" to property("loader_version") as String,
-    "fabric_kotlin_version" to property("fabric_kotlin_version") as String,
-    "modmenu_version" to property("modmenu_version") as String,
-)
+// Defined once in the root build so the archive validator expands exactly the set of
+// placeholders processResources declares here.
+@Suppress("UNCHECKED_CAST")
+val manifestValues = rootProject.extra["biometunesManifestValues"] as Map<String, String>
 
 // Modrinth release copy lives beside this build file so it is reviewable in the repository
 // rather than typed into the web editor. Pre-1.0 versions publish as beta.
@@ -71,15 +66,40 @@ modrinth {
     }
 }
 
-// Fail closed rather than silently publishing a version with an empty changelog or
-// blanking the project page, which is what an absent file provider would do.
+// Minotaur splits publication across two tasks: `modrinth` uploads the version and never
+// reads syncBodyFrom, while `modrinthSyncBody` is the only task that updates the project
+// page. Without this the description would never leave the repository.
 tasks.named("modrinth") {
-    doFirst {
-        require(modrinthChangelog.asFile.isFile) {
-            "Missing Modrinth changelog for version ${project.version}: expected ${modrinthChangelog.asFile}"
+    finalizedBy(tasks.named("modrinthSyncBody"))
+}
+
+// Run as part of `check` so a version bump without a matching changelog fails during the
+// build, not after the release workflow has already published the GitHub release.
+val verifyReleaseCopy = tasks.register("verifyReleaseCopy") {
+    group = "verification"
+    description = "Checks the Modrinth description and this version's changelog exist and are non-empty."
+    val body = modrinthBody.asFile
+    val changelog = modrinthChangelog.asFile
+    val version = project.version.toString()
+    inputs.files(body, changelog).optional()
+    doLast {
+        listOf(
+            "Modrinth project description" to body,
+            "Modrinth changelog for version $version" to changelog,
+        ).forEach { (label, file) ->
+            require(file.isFile) { "Missing $label: expected $file" }
+            require(file.length() > 0L) { "Empty $label: $file" }
         }
-        require(modrinthBody.asFile.isFile) {
-            "Missing Modrinth project description: expected ${modrinthBody.asFile}"
+    }
+}
+
+tasks.named("modrinth") {
+    dependsOn(verifyReleaseCopy)
+    doFirst {
+        // Unset GitHub secrets arrive as empty strings, which would otherwise surface as an
+        // opaque 401 from Modrinth instead of naming the missing credential.
+        listOf("MODRINTH_TOKEN", "MODRINTH_PROJECT_ID").forEach { name ->
+            require(!System.getenv(name).isNullOrBlank()) { "$name is unset or empty" }
         }
     }
 }
@@ -95,12 +115,14 @@ tasks.test {
 
 tasks.check {
     dependsOn(rootProject.tasks.named("verifyDistributionArchivesContract"))
+    dependsOn(verifyReleaseCopy)
 }
 
 tasks.processResources {
     manifestValues.forEach { (key, value) -> inputs.property(key, value) }
     filesMatching("fabric.mod.json") {
-        expand(manifestValues)
+        // expand() is Groovy templating; without this a future \" or \\ in the JSON is eaten.
+        expand(manifestValues) { escapeBackslash = true }
     }
     from(rootProject.file("apps/soundpack/assets")) { into("assets") }
     from(rootProject.file("apps/soundpack/pack.png")) {

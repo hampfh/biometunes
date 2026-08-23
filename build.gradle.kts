@@ -33,6 +33,18 @@ plugins {
     id("com.modrinth.minotaur") version "2.9.0" apply false
 }
 
+// The placeholders processResources expands into fabric.mod.json. Defined here and shared
+// with :apps:mod so adding one is a single edit rather than three, and so the archive
+// validator below expands exactly the set the build declares.
+val biometunesManifestValues: Map<String, String> = mapOf(
+    "version" to providers.gradleProperty("mod_version").get(),
+    "minecraft_version" to providers.gradleProperty("minecraft_version").get(),
+    "loader_version" to providers.gradleProperty("loader_version").get(),
+    "fabric_kotlin_version" to providers.gradleProperty("fabric_kotlin_version").get(),
+    "modmenu_version" to providers.gradleProperty("modmenu_version").get(),
+)
+extra["biometunesManifestValues"] = biometunesManifestValues
+
 tasks.register<Zip>("packageSoundpack") {
     archiveBaseName.set("biometunes-soundpack")
     archiveVersion.set(providers.gradleProperty("mod_version"))
@@ -408,17 +420,7 @@ tasks.register<VerifyDistributionArchives>("verifyDistributionArchives") {
     )
     expectedModVersion.set(providers.gradleProperty("mod_version"))
     expectedMinecraftVersion.set(providers.gradleProperty("minecraft_version"))
-    expectedManifestValues.set(
-        providers.provider {
-            mapOf(
-                "version" to providers.gradleProperty("mod_version").get(),
-                "minecraft_version" to providers.gradleProperty("minecraft_version").get(),
-                "loader_version" to providers.gradleProperty("loader_version").get(),
-                "fabric_kotlin_version" to providers.gradleProperty("fabric_kotlin_version").get(),
-                "modmenu_version" to providers.gradleProperty("modmenu_version").get(),
-            )
-        },
-    )
+    expectedManifestValues.set(biometunesManifestValues)
 }
 
 abstract class VerifyDistributionArchivesContract : DefaultTask() {
@@ -628,15 +630,5 @@ tasks.register<VerifyDistributionArchivesContract>("verifyDistributionArchivesCo
     canonicalIcon.set(layout.projectDirectory.file("apps/soundpack/pack.png"))
     expectedModVersion.set(providers.gradleProperty("mod_version"))
     expectedMinecraftVersion.set(providers.gradleProperty("minecraft_version"))
-    expectedManifestValues.set(
-        providers.provider {
-            mapOf(
-                "version" to providers.gradleProperty("mod_version").get(),
-                "minecraft_version" to providers.gradleProperty("minecraft_version").get(),
-                "loader_version" to providers.gradleProperty("loader_version").get(),
-                "fabric_kotlin_version" to providers.gradleProperty("fabric_kotlin_version").get(),
-                "modmenu_version" to providers.gradleProperty("modmenu_version").get(),
-            )
-        },
-    )
+    expectedManifestValues.set(biometunesManifestValues)
 }
