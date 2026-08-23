@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "25"
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Check tag matches mod version
+        run: |
+          expected_version=$(sed -n 's/^mod_version=//p' gradle.properties)
+          actual_version=${GITHUB_REF_NAME#v}
+          test "$actual_version" = "$expected_version"
+      - name: Check explicit release approval
+        env:
+          RELEASE_APPROVED_TAG: ${{ vars.RELEASE_APPROVED_TAG }}
+        run: |
+          test -n "${RELEASE_APPROVED_TAG:-}"
+          test "$RELEASE_APPROVED_TAG" = "$GITHUB_REF_NAME"
+      - run: ./gradlew clean build packageSoundpack verifyDistributionArchives
+      - uses: softprops/action-gh-release@v3
+        with:
+          files: |
+            apps/mod/build/libs/biometunes-1.0.0.jar
+            build/distributions/biometunes-soundpack-1.0.0.zip
+          generate_release_notes: true
+      - name: Publish Fabric JAR to Modrinth
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          MODRINTH_PROJECT_ID: ${{ secrets.MODRINTH_PROJECT_ID }}
+        run: ./gradlew :apps:mod:modrinth

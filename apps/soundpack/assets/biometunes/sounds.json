@@ -1,0 +1,77 @@
+{
+  "music.birch_forest": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.birch_forest",
+    "sounds": [{ "name": "biometunes:music/birch_forest", "stream": true }]
+  },
+  "music.dark_forest": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.dark_forest",
+    "sounds": [{ "name": "biometunes:music/dark_forest", "stream": true }]
+  },
+  "music.desert": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.desert",
+    "sounds": [{ "name": "biometunes:music/desert", "stream": true }]
+  },
+  "music.ender_dragon": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.ender_dragon",
+    "sounds": [{ "name": "biometunes:music/ender_dragon", "stream": true }]
+  },
+  "music.flower_forest": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.flower_forest",
+    "sounds": [{ "name": "biometunes:music/flower_forest", "stream": true }]
+  },
+  "music.forest": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.forest",
+    "sounds": [{ "name": "biometunes:music/forest", "stream": true }]
+  },
+  "music.jungle": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.jungle",
+    "sounds": [{ "name": "biometunes:music/jungle", "stream": true }]
+  },
+  "music.mountains": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.mountains",
+    "sounds": [{ "name": "biometunes:music/mountains", "stream": true }]
+  },
+  "music.ocean": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.ocean",
+    "sounds": [{ "name": "biometunes:music/ocean", "stream": true }]
+  },
+  "music.plains": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.plains",
+    "sounds": [{ "name": "biometunes:music/plains", "stream": true }]
+  },
+  "music.savanna": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.savanna",
+    "sounds": [{ "name": "biometunes:music/savanna", "stream": true }]
+  },
+  "music.snowy": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.snowy",
+    "sounds": [{ "name": "biometunes:music/snowy", "stream": true }]
+  },
+  "music.snowy_ocean": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.snowy_ocean",
+    "sounds": [{ "name": "biometunes:music/snowy_ocean", "stream": true }]
+  },
+  "music.the_end": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.the_end",
+    "sounds": [{ "name": "biometunes:music/the_end", "stream": true }]
+  },
+  "music.warm_ocean": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.warm_ocean",
+    "sounds": [{ "name": "biometunes:music/warm_ocean", "stream": true }]
+  }
+}

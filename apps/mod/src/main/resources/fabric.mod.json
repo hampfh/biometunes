@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "biometunes",
+  "version": "${version}",
+  "name": "BiomeTunes",
+  "description": "Crossfading biome soundtracks for Minecraft.",
+  "authors": ["Hampus Hallkvist"],
+  "contact": {
+    "sources": "https://github.com/BiomeTunes/datapack",
+    "issues": "https://github.com/BiomeTunes/datapack/issues"
+  },
+  "license": "Apache-2.0",
+  "icon": "assets/biometunes/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      {
+        "adapter": "kotlin",
+        "value": "com.hampushallkvist.biometunes.client.BiomeTunesClient"
+      }
+    ],
+    "modmenu": [
+      {
+        "adapter": "kotlin",
+        "value": "com.hampushallkvist.biometunes.ui.BiomeTunesModMenu"
+      }
+    ]
+  },
+  "mixins": ["biometunes.client.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "fabric-api": "*",
+    "fabric-language-kotlin": ">=1.13.13+kotlin.2.4.10",
+    "minecraft": "~26.2",
+    "java": ">=25"
+  },
+  "suggests": {
+    "modmenu": ">=20.0.1"
+  }
+}
