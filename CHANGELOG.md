@@ -11,8 +11,10 @@ All notable changes to BiomeTunes are documented in this file.
 - Added Frozen Ocean, Mountains 2, Nether Wastes, Swamp, Taiga, and Underground recordings, bringing the bundled soundtrack to 21 tracks.
 - Added Environmental Classification with Outside, Sheltered, and Subterranean Environment Modes in resource-pack-configured dimensions.
 - Added a bounded Overworld classifier that never loads chunks, preserves Native Underground Biome and boss pools, and routes generic deep caverns to the Underground pool.
-- Added smooth Sheltered gain and OpenAL EFX low-pass treatment with a gain-only fallback.
-- Added an opt-in Environmental Debug HUD showing cached evidence, scores, decisions, treatment, and EFX status without additional world sampling.
+- Added strong, smooth Sheltered gain, OpenAL EFX low-pass treatment, and a shared short dark-room reverb with a gain-only fallback.
+- Reapply changing low-pass values to active OpenAL voices so the audible filter follows its smoothing envelope.
+- Preserve each outgoing voice's Sheltered treatment during crossfades and intentional-silence fades, preventing it from becoming louder as Subterranean begins.
+- Added an opt-in Environmental Debug HUD showing cached evidence, scores, decisions, treatment, low-pass status, and reverb status without additional world sampling.
 
 ## 0.5 - 2026-08-23
 

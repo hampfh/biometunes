@@ -6,7 +6,7 @@ BiomeTunes brings handcrafted original music to every biome, flowing smoothly wi
 
 - 🌍 Music chosen for your biome, dimension, or boss fight
 - 🏠 Outside, Sheltered, and Subterranean Environmental Classification in the Overworld
-- 🎧 Smooth sheltered muffling, with automatic gain-only fallback when filtering is unavailable
+- 🎧 Strong wall-occluded Sheltered treatment with dark room reflections and automatic gain-only fallback
 - 🎚️ Seamless crossfades without stacked tracks
 - 🖥️ Client-side only, so it works in single-player and on vanilla servers
 
@@ -18,7 +18,7 @@ BiomeTunes brings handcrafted original music to every biome, flowing smoothly wi
 
 The soundtrack is included. You do not need a resource pack or a server installation.
 
-BiomeTunes uses a fixed-cost Environmental Classification pass in the Overworld. Outside plays ordinary biome music, Sheltered keeps the same track with a softer, muffled treatment, and Subterranean uses the Underground pool. Cave biomes and bosses keep their dedicated music unchanged. An optional debug HUD shows the cached classification evidence and audio-filter status without performing additional world queries.
+BiomeTunes uses a fixed-cost Environmental Classification pass in the Overworld. Outside plays ordinary biome music, Sheltered keeps the same track with a lower wall-occluded treatment and short dark room reflections, and Subterranean uses the Underground pool. Cave biomes and bosses keep their dedicated music unchanged. An optional debug HUD shows the cached classification evidence, low-pass status, and reverb status without performing additional world queries.
 
 ## 🎼 Music and attribution
 
