@@ -1,4 +1,4 @@
-# BiomeTunes 0.5 manual audio checklist
+# BiomeTunes 0.6 manual audio checklist
 
 ## Test record
 
@@ -31,6 +31,25 @@ Automated tests and a successful development-client startup can establish prereq
 | 15 | Music discs remain audible and unaffected | 2026-08-22 | PENDING HUMAN VERIFICATION | BiomeTunes only gates scheduled vanilla music; music-disc playback still requires in-game listening. |
 | 16 | Malformed config falls back without deleting the file | 2026-08-22 | PENDING HUMAN VERIFICATION | `ConfigStoreTest` verifies defaults and byte-for-byte preservation; the development client's real config was not corrupted manually. |
 | 17 | Malformed override catalog retains the previous valid catalog | 2026-08-22 | PENDING HUMAN VERIFICATION | `ReloadableTrackCatalogTest` verifies last-known-good retention; no interactive override reload was performed. |
+| 18 | An opaque-roofed house becomes Sheltered and muffles the existing track without restarting it | 2026-08-30 | PENDING HUMAN VERIFICATION | Classifier, treatment-envelope, and no-reroll director behavior are unit-tested; the audible result was not assessed. |
+| 19 | A glass-roofed and glass-walled house can be Sheltered but never Subterranean | 2026-08-30 | PENDING HUMAN VERIFICATION | Native skylight and enclosure semantics are unit-tested; the in-world glass structure was not observed. |
+| 20 | A leaf canopy does not behave like an opaque surface roof | 2026-08-30 | PENDING HUMAN VERIFICATION | `MOTION_BLOCKING_NO_LEAVES` behavior is unit-tested through the observation boundary; an in-world canopy was not observed. |
+| 21 | A shallow cave near an exposed entrance remains Outside or Sheltered | 2026-08-30 | PENDING HUMAN VERIFICATION | Nearby sky exposure forbids Subterranean in unit tests; cave-mouth traversal was not observed. |
+| 22 | A deep generic cavern enters Subterranean and selects the profile pool | 2026-08-30 | PENDING HUMAN VERIFICATION | Deep evidence and resolver routing are unit-tested; a generic cavern was not played in-world. |
+| 23 | A deep open ravine remains non-Subterranean while any sampled position sees sky | 2026-08-30 | PENDING HUMAN VERIFICATION | The immediate sky constraint is unit-tested; an open ravine was not traversed. |
+| 24 | Deep Dark bypasses Environmental Classification and plays its exact biome pool unchanged | 2026-08-30 | PENDING HUMAN VERIFICATION | Native Underground Biome bypass and catalog membership are unit-tested. |
+| 25 | Dripstone Caves bypasses Environmental Classification and plays its exact biome pool unchanged | 2026-08-30 | PENDING HUMAN VERIFICATION | Native Underground Biome bypass and catalog membership are unit-tested. |
+| 26 | Lush Caves bypasses Environmental Classification and plays its exact biome pool unchanged | 2026-08-30 | PENDING HUMAN VERIFICATION | Native Underground Biome bypass and catalog membership are unit-tested. |
+| 27 | Sulfur Caves bypasses Environmental Classification and plays its exact biome pool unchanged | 2026-08-30 | PENDING HUMAN VERIFICATION | Native Underground Biome bypass and catalog membership are unit-tested. |
+| 28 | Entering a boss encounter removes Sheltered treatment and preserves boss-pool precedence | 2026-08-30 | PENDING HUMAN VERIFICATION | Boss bypass and resolver precedence over Subterranean are unit-tested; encounter audio was not heard. |
+| 29 | The Nether has no Environmental Profile and retains its existing music behavior | 2026-08-30 | PENDING HUMAN VERIFICATION | The bundled profile-key contract asserts Overworld-only configuration. |
+| 30 | The End has no Environmental Profile and retains its existing music behavior | 2026-08-30 | PENDING HUMAN VERIFICATION | The bundled profile-key contract asserts Overworld-only configuration. |
+| 31 | Pausing holds both crossfade and Sheltered treatment progress, then resumes smoothly | 2026-08-30 | PENDING HUMAN VERIFICATION | Playback and treatment pause behavior are unit-tested; audible pause/resume was not assessed. |
+| 32 | F3+T resets Environmental Classification and audio treatment, then samples cleanly | 2026-08-30 | PENDING HUMAN VERIFICATION | Accepted-reload reset boundaries compile and catalog retention is unit-tested. |
+| 33 | Changing the audio device recreates the EFX filter without retaining an old-context ID | 2026-08-30 | PENDING HUMAN VERIFICATION | OpenAL context-token recreation is unit-tested with a fake backend. |
+| 34 | Missing or failed EFX continues playback with gain-only Sheltered treatment and one warning | 2026-08-30 | PENDING HUMAN VERIFICATION | Unsupported/error fallback and failure deduplication are unit-tested. |
+| 35 | Entering and leaving Subterranean uses the ordinary crossfade and leaves no orphan voice | 2026-08-30 | PENDING HUMAN VERIFICATION | Resolver pool keys and bounded crossfade voice ownership are unit-tested. |
+| 36 | Environmental Debug HUD values update at the sampling cadence without visible frame or tick slowdown | 2026-08-30 | PENDING HUMAN VERIFICATION | HUD formatting consumes cached snapshots only; perceived performance requires interactive observation. |
 
 ## Additional pre-release gates
 
@@ -40,5 +59,5 @@ Automated tests and a successful development-client startup can establish prereq
   shows type **Mod** and environment client **required** / server **unsupported**, derived from
   `"environment": "client"` in `fabric.mod.json`.
 - PENDING RELEASE CREDENTIALS: configure `MODRINTH_TOKEN` and `MODRINTH_PROJECT_ID` only when an authorized maintainer is ready to publish.
-- PENDING RELEASE AUTHORIZATION: do not tag, push, create a GitHub release, or run `:apps:mod:modrinth` until every gate above and all 17 rows are complete.
-- PENDING FAIL-CLOSED APPROVAL: only after all 17 rows pass, the Forest attribution is confirmed, Modrinth environments and credentials are ready, and explicit release authorization is given may an authorized maintainer set the repository Actions variable `RELEASE_APPROVED_TAG` to the exact intended tag (`v` followed by `mod_version`). Missing, empty, or mismatched values fail before build and publication. Remove or unset the variable after the release completes.
+- PENDING RELEASE AUTHORIZATION: do not tag, push, create a GitHub release, or run `:apps:mod:modrinth` until every gate above and all 36 rows are complete.
+- PENDING FAIL-CLOSED APPROVAL: only after all 36 rows pass, the Forest attribution is confirmed, Modrinth environments and credentials are ready, and explicit release authorization is given may an authorized maintainer set the repository Actions variable `RELEASE_APPROVED_TAG` to the exact intended tag (`v` followed by `mod_version`). Missing, empty, or mismatched values fail before build and publication. Remove or unset the variable after the release completes.

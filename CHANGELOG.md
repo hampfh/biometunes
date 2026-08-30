@@ -2,6 +2,18 @@
 
 All notable changes to BiomeTunes are documented in this file.
 
+## 0.6 - 2026-08-30
+
+- Added weighted song pools for biomes, bosses, biome tags, dimensions, and fallback music.
+- Added weighted intentional silence with global defaults, per-pool overrides, and random duration ranges.
+- Added zero-weight pool entries, used by the bundled boss pools to opt out of global silence.
+- Reroll the active pool whenever a track ends or a silence interval expires.
+- Added Frozen Ocean, Mountains 2, Nether Wastes, Swamp, Taiga, and Underground recordings, bringing the bundled soundtrack to 21 tracks.
+- Added Environmental Classification with Outside, Sheltered, and Subterranean Environment Modes in resource-pack-configured dimensions.
+- Added a bounded Overworld classifier that never loads chunks, preserves Native Underground Biome and boss pools, and routes generic deep caverns to the Underground pool.
+- Added smooth Sheltered gain and OpenAL EFX low-pass treatment with a gain-only fallback.
+- Added an opt-in Environmental Debug HUD showing cached evidence, scores, decisions, treatment, and EFX status without additional world sampling.
+
 ## 0.5 - 2026-08-23
 
 - Rewrote BiomeTunes as a client-only Kotlin mod for Fabric and Minecraft 26.2 while retaining the legacy datapack.
