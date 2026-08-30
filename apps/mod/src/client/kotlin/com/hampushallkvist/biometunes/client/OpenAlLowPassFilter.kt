@@ -32,6 +32,9 @@ data class AudioTreatmentDiagnostics(
     val requestedHighFrequencyGain: Float,
     val attachedVoiceCount: Int,
     val effectiveGainMultiplier: Float = 1.0f,
+    val reverbStatus: ReverbStatus = ReverbStatus.INACTIVE,
+    val requestedReverbSend: Float = 0.0f,
+    val reverbVoiceCount: Int = 0,
 )
 
 class OpenAlLowPassFilter(
@@ -41,7 +44,7 @@ class OpenAlLowPassFilter(
     private var contextToken: Any? = null
     private var filterId: Int? = null
     private var lastHighFrequencyGain: Float? = null
-    private val attachedSources = mutableSetOf<Int>()
+    private val appliedHighFrequencyGainBySource = mutableMapOf<Int, Float>()
     private var unavailableStatus: AudioFilterStatus? = null
     private var failureReported = false
 
@@ -78,7 +81,10 @@ class OpenAlLowPassFilter(
                 backend.setHighFrequencyGain(filter, requested)
                 lastHighFrequencyGain = requested
             }
-            if (attachedSources.add(source)) backend.attach(source, filter)
+            if (appliedHighFrequencyGainBySource[source] != requested) {
+                backend.attach(source, filter)
+                appliedHighFrequencyGainBySource[source] = requested
+            }
             updateDiagnostics(AudioFilterStatus.EFX_ACTIVE, requested)
         } catch (error: Throwable) {
             fail(error, requested)
@@ -88,7 +94,9 @@ class OpenAlLowPassFilter(
     fun reset(activeSources: IntArray) {
         try {
             if (filterId != null) {
-                (activeSources.asIterable() + attachedSources).distinct().forEach(backend::detach)
+                (activeSources.asIterable() + appliedHighFrequencyGainBySource.keys)
+                    .distinct()
+                    .forEach(backend::detach)
                 backend.delete(filterId!!)
             }
         } catch (error: Throwable) {
@@ -117,8 +125,12 @@ class OpenAlLowPassFilter(
 
     private fun detach(source: Int, requested: Float) {
         try {
-            if (attachedSources.remove(source)) backend.detach(source)
-            val status = if (attachedSources.isEmpty()) AudioFilterStatus.INACTIVE else AudioFilterStatus.EFX_ACTIVE
+            if (appliedHighFrequencyGainBySource.remove(source) != null) backend.detach(source)
+            val status = if (appliedHighFrequencyGainBySource.isEmpty()) {
+                AudioFilterStatus.INACTIVE
+            } else {
+                AudioFilterStatus.EFX_ACTIVE
+            }
             updateDiagnostics(status, requested)
         } catch (error: Throwable) {
             fail(error, requested)
@@ -127,7 +139,7 @@ class OpenAlLowPassFilter(
 
     private fun fail(error: Throwable, requested: Float) {
         unavailableStatus = AudioFilterStatus.GAIN_ONLY_ERROR
-        attachedSources.clear()
+        appliedHighFrequencyGainBySource.clear()
         if (!failureReported) {
             failureReported = true
             onFailure(error)
@@ -136,14 +148,14 @@ class OpenAlLowPassFilter(
     }
 
     private fun updateDiagnostics(status: AudioFilterStatus, requested: Float) {
-        diagnostics = AudioTreatmentDiagnostics(status, requested, attachedSources.size)
+        diagnostics = AudioTreatmentDiagnostics(status, requested, appliedHighFrequencyGainBySource.size)
     }
 
     private fun clearState(clearContext: Boolean) {
         if (clearContext) contextToken = null
         filterId = null
         lastHighFrequencyGain = null
-        attachedSources.clear()
+        appliedHighFrequencyGainBySource.clear()
         unavailableStatus = null
         failureReported = false
         diagnostics = AudioTreatmentDiagnostics(AudioFilterStatus.INACTIVE, 1.0f, 0)

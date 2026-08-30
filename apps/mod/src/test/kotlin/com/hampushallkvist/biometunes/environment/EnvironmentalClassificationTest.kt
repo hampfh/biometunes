@@ -121,7 +121,7 @@ class EnvironmentalClassificationTest {
             weights = EnvironmentalWeights(1.0, 0.25, 0.25, 1.0, 0.25, 0.15, 0.05),
             thresholds = EnvironmentalThresholds(0.65, 0.45, 0.70, 0.55, 0.25, 0.40),
             smoothingSeconds = 2.0,
-            shelteredAudio = ShelteredAudioSettings(0.85f, 0.35f),
+            shelteredAudio = ShelteredAudioSettings(0.85f, 0.35f, 0.0f),
         )
 
         fun input(

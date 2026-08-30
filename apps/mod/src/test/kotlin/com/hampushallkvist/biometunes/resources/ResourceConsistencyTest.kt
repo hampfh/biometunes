@@ -1,5 +1,7 @@
 package com.hampushallkvist.biometunes.resources
 
+import com.hampushallkvist.biometunes.catalog.TrackCatalogParser
+import com.hampushallkvist.biometunes.playback.ShelteredTreatmentEnvelope
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.extension
@@ -21,6 +23,22 @@ class ResourceConsistencyTest {
     private val catalog = root.resolve(
         "apps/mod/src/client/resources/assets/biometunes/biometunes/tracks.json",
     )
+
+    @Test
+    fun `bundled sheltered treatment is unmistakable at representative house intensity`() {
+        val parsed = TrackCatalogParser.parse(Files.readString(catalog)).getOrThrow()
+        val settings = parsed.environmentalProfiles.getValue("minecraft:overworld").shelteredAudio
+        val treatment = ShelteredTreatmentEnvelope().update(
+            targetIntensity = 0.929f,
+            settings = settings,
+            smoothingSeconds = 0.0,
+            advance = true,
+        )
+
+        assertEquals(0.2568f, treatment.gainMultiplier, absoluteTolerance = 0.0001f)
+        assertEquals(0.071f, treatment.highFrequencyGain, absoluteTolerance = 0.0001f)
+        assertEquals(0.1858f, treatment.reverbSend, absoluteTolerance = 0.0001f)
+    }
 
     @Test
     fun `settings and action bar text has the complete English translation contract`() {

@@ -8,6 +8,7 @@ interface AudioAdapter {
     fun start(track: TrackDefinition, initialGain: Float): AudioHandle?
     fun setGain(handle: AudioHandle, gain: Float)
     fun setLowPass(handle: AudioHandle, highFrequencyGain: Float) {}
+    fun setReverb(handle: AudioHandle, send: Float) {}
     fun setTreatment(treatment: AudioTreatment) {}
     fun stop(handle: AudioHandle)
     fun isPlaying(handle: AudioHandle): Boolean

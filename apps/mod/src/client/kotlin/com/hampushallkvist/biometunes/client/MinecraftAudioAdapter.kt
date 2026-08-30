@@ -22,11 +22,28 @@ class MinecraftAudioAdapter(private val client: Minecraft) : AudioAdapter {
             )
         },
     )
+    private val reverb = OpenAlReverbSend(
+        backend = LwjglReverbBackend(),
+        onFailure = { error ->
+            BiomeTunesClient.logger.warn(
+                "OpenAL EFX reverb failed; sheltered playback will continue without room reflections",
+                error,
+            )
+        },
+    )
     @Volatile
     private var effectiveGainMultiplier = 1.0f
 
     val treatmentDiagnostics: AudioTreatmentDiagnostics
-        get() = lowPass.diagnostics.copy(effectiveGainMultiplier = effectiveGainMultiplier)
+        get() {
+            val reverbDiagnostics = reverb.diagnostics
+            return lowPass.diagnostics.copy(
+                effectiveGainMultiplier = effectiveGainMultiplier,
+                reverbStatus = reverbDiagnostics.status,
+                requestedReverbSend = reverbDiagnostics.requestedSend,
+                reverbVoiceCount = reverbDiagnostics.attachedVoiceCount,
+            )
+        }
 
     override fun start(track: TrackDefinition, initialGain: Float): AudioHandle? {
         val location = Identifier.parse(track.soundEvent)
@@ -81,6 +98,17 @@ class MinecraftAudioAdapter(private val client: Minecraft) : AudioAdapter {
         }
     }
 
+    override fun setReverb(handle: AudioHandle, send: Float) {
+        val instance = handle as? BiomeTunesSoundInstance ?: return
+        val channelHandle = soundEngine().biometunesInstanceToChannel()[instance] ?: return
+        channelHandle.execute { channel ->
+            reverb.apply(
+                source = (channel as ChannelAccessor).biometunesSource(),
+                send = send,
+            )
+        }
+    }
+
     override fun setTreatment(treatment: AudioTreatment) {
         effectiveGainMultiplier = treatment.gainMultiplier
     }
@@ -88,6 +116,7 @@ class MinecraftAudioAdapter(private val client: Minecraft) : AudioAdapter {
     override fun stop(handle: AudioHandle) {
         (handle as? BiomeTunesSoundInstance)?.let { instance ->
             setLowPass(instance, 1.0f)
+            setReverb(instance, 0.0f)
             client.soundManager.stop(instance)
         }
     }
@@ -111,11 +140,14 @@ class MinecraftAudioAdapter(private val client: Minecraft) : AudioAdapter {
             .values
             .forEach { handle ->
                 handle.execute { channel ->
-                    lowPass.apply((channel as ChannelAccessor).biometunesSource(), 1.0f)
+                    val source = (channel as ChannelAccessor).biometunesSource()
+                    lowPass.apply(source, 1.0f)
+                    reverb.apply(source, 0.0f)
                 }
             }
         engine.biometunesChannelAccess().executeOnChannels {
             lowPass.reset(intArrayOf())
+            reverb.reset(intArrayOf())
         }
     }
 

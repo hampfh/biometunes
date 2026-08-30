@@ -10,12 +10,12 @@ import kotlin.test.assertTrue
 
 class PlaybackControllerTest {
     @Test
-    fun `treatment multiplies every live voice gain and applies the same low pass`() {
+    fun `unchanged treatment applies gain low pass and reverb send to every live voice`() {
         val session = Session()
         val treated = PlaybackOptions(
             volume = 0.5f,
             crossfadeTicks = 100,
-            treatment = AudioTreatment(gainMultiplier = 0.8f, highFrequencyGain = 0.4f),
+            treatment = AudioTreatment(gainMultiplier = 0.8f, highFrequencyGain = 0.4f, reverbSend = 0.12f),
         )
         session.tick(trackA, treated)
         session.tick(trackB, treated)
@@ -25,22 +25,25 @@ class PlaybackControllerTest {
         assertEquals(equalPowerGain(0.5) * 0.5f * 0.8f, session.adapter.gainFor(trackB.id), 0.0002f)
         assertEquals(0.4f, session.adapter.lowPassFor(trackA.id))
         assertEquals(0.4f, session.adapter.lowPassFor(trackB.id))
+        assertEquals(0.12f, session.adapter.reverbFor(trackA.id))
+        assertEquals(0.12f, session.adapter.reverbFor(trackB.id))
     }
 
     @Test
     fun `silence fades retain current treatment until voices stop`() {
         val session = Session()
-        session.tick(trackA, PlaybackOptions(1.0f, 100))
         val treated = PlaybackOptions(
             volume = 0.6f,
             crossfadeTicks = 100,
-            treatment = AudioTreatment(gainMultiplier = 0.75f, highFrequencyGain = 0.2f),
+            treatment = AudioTreatment(gainMultiplier = 0.75f, highFrequencyGain = 0.2f, reverbSend = 0.1f),
         )
+        session.tick(trackA, treated)
 
-        session.controller.updateSilence(treated)
+        session.controller.updateSilence(PlaybackOptions(volume = 0.6f, crossfadeTicks = 100))
 
         assertEquals(equalPowerGain(0.99) * 0.6f * 0.75f, session.adapter.gainFor(trackA.id), 0.0002f)
         assertEquals(0.2f, session.adapter.lowPassFor(trackA.id))
+        assertEquals(0.1f, session.adapter.reverbFor(trackA.id))
     }
 
     @Test
@@ -544,6 +547,7 @@ private class FakeAudioAdapter : AudioAdapter {
         val track: TrackDefinition,
         var gain: Float,
         var highFrequencyGain: Float = 1.0f,
+        var reverbSend: Float = 0.0f,
         var playing: Boolean = true,
     )
 
@@ -584,6 +588,10 @@ private class FakeAudioAdapter : AudioAdapter {
         instances.getValue(handle as FakeAudioHandle).highFrequencyGain = highFrequencyGain
     }
 
+    override fun setReverb(handle: AudioHandle, send: Float) {
+        instances.getValue(handle as FakeAudioHandle).reverbSend = send
+    }
+
     override fun stop(handle: AudioHandle) {
         val instance = requireNotNull(instances.remove(handle as FakeAudioHandle)) {
             "attempted to stop an unknown or already-disposed handle $handle"
@@ -605,6 +613,9 @@ private class FakeAudioAdapter : AudioAdapter {
 
     fun lowPassFor(trackId: TrackId): Float =
         instances.values.single { it.track.id == trackId }.highFrequencyGain
+
+    fun reverbFor(trackId: TrackId): Float =
+        instances.values.single { it.track.id == trackId }.reverbSend
 
     fun gains(): Map<TrackId, Float> = instances.values.associate { it.track.id to it.gain }
 

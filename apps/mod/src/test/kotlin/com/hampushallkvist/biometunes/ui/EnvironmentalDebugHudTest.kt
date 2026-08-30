@@ -2,6 +2,7 @@ package com.hampushallkvist.biometunes.ui
 
 import com.hampushallkvist.biometunes.client.AudioFilterStatus
 import com.hampushallkvist.biometunes.client.AudioTreatmentDiagnostics
+import com.hampushallkvist.biometunes.client.ReverbStatus
 import com.hampushallkvist.biometunes.environment.DecisionBasis
 import com.hampushallkvist.biometunes.environment.EnvironmentConstraints
 import com.hampushallkvist.biometunes.environment.EnvironmentMode
@@ -13,8 +14,16 @@ import com.hampushallkvist.biometunes.environment.NotClassifiedReason
 import com.hampushallkvist.biometunes.selection.PlayerContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import net.minecraft.util.ARGB
 
 class EnvironmentalDebugHudTest {
+    @Test
+    fun `debug text color is visible to the ARGB renderer`() {
+        val textColor = EnvironmentalDebugHud::class.java.getField("TEXT_COLOR").getInt(null)
+
+        assertEquals(255, ARGB.alpha(textColor))
+    }
+
     @Test
     fun `classified lines expose the complete cached diagnostic snapshot`() {
         val context = context(
@@ -44,6 +53,9 @@ class EnvironmentalDebugHudTest {
             requestedHighFrequencyGain = 0.45f,
             attachedVoiceCount = 2,
             effectiveGainMultiplier = 0.9f,
+            reverbStatus = ReverbStatus.EFX_ACTIVE,
+            requestedReverbSend = 0.1f,
+            reverbVoiceCount = 2,
         )
 
         assertEquals(
@@ -57,6 +69,7 @@ class EnvironmentalDebugHudTest {
                 "Sky exposed: 2/9 | Median depth: 12.0 | Enclosure: 0.750",
                 "Light: sky=3 block=7 | Shelter: 0.700",
                 "Treatment: gain=0.900 high-frequency=0.450 | EFX_ACTIVE | Voices=2",
+                "Reverb: send=0.100 | EFX_ACTIVE | Voices=2",
             ),
             EnvironmentalDebugLines.format(context, audio),
         )

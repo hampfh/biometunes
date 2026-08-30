@@ -41,6 +41,7 @@ class TrackCatalogParserTest {
                 shelteredAudio = ShelteredAudioSettings(
                     maximumGainMultiplier = 0.85f,
                     maximumHighFrequencyGain = 0.35f,
+                    maximumReverbSend = 0.12f,
                 ),
             ),
             catalog.environmentalProfiles["minecraft:overworld"],
@@ -89,6 +90,7 @@ class TrackCatalogParserTest {
             Triple("large smoothing", minimalCatalog.replace("\"smoothing_seconds\":2.0", "\"smoothing_seconds\":11.0"), "smoothing_seconds"),
             Triple("large gain", minimalCatalog.replace("\"maximum_gain_multiplier\":0.85", "\"maximum_gain_multiplier\":1.1"), "sheltered_audio.maximum_gain_multiplier"),
             Triple("negative high-frequency gain", minimalCatalog.replace("\"maximum_high_frequency_gain\":0.35", "\"maximum_high_frequency_gain\":-0.1"), "sheltered_audio.maximum_high_frequency_gain"),
+            Triple("large reverb send", minimalCatalog.replace("\"maximum_reverb_send\":0.12", "\"maximum_reverb_send\":1.1"), "sheltered_audio.maximum_reverb_send"),
         )
 
         cases.forEach { (name, json, field) ->
@@ -437,7 +439,8 @@ class TrackCatalogParserTest {
                 "smoothing_seconds": 2.0,
                 "sheltered_audio": {
                   "maximum_gain_multiplier": 0.85,
-                  "maximum_high_frequency_gain": 0.35
+                  "maximum_high_frequency_gain": 0.35,
+                  "maximum_reverb_send": 0.12
                 }
               }
             }

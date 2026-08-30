@@ -21,6 +21,25 @@ class OpenAlLowPassFilterTest {
     }
 
     @Test
+    fun `changed filter values are reapplied once to every attached source`() {
+        val backend = FakeLowPassBackend()
+        val filter = OpenAlLowPassFilter(backend) { throw it }
+
+        filter.apply(source = 10, highFrequencyGain = 0.8f)
+        filter.apply(source = 11, highFrequencyGain = 0.8f)
+        filter.apply(source = 10, highFrequencyGain = 0.2f)
+        filter.apply(source = 11, highFrequencyGain = 0.2f)
+        filter.apply(source = 10, highFrequencyGain = 0.2f)
+
+        assertEquals(listOf(1 to 0.8f, 1 to 0.2f), backend.parameterWrites)
+        assertEquals(
+            listOf(10 to 1, 11 to 1, 10 to 1, 11 to 1),
+            backend.attachments,
+        )
+        assertEquals(AudioTreatmentDiagnostics(AudioFilterStatus.EFX_ACTIVE, 0.2f, 2), filter.diagnostics)
+    }
+
+    @Test
     fun `gain one detaches a source and reset disposes state for a new attempt`() {
         val backend = FakeLowPassBackend()
         val filter = OpenAlLowPassFilter(backend) { throw it }
