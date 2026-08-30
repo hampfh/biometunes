@@ -124,7 +124,10 @@ tasks.processResources {
         // expand() is Groovy templating; without this a future \" or \\ in the JSON is eaten.
         expand(manifestValues) { escapeBackslash = true }
     }
-    from(rootProject.file("apps/soundpack/assets")) { into("assets") }
+    from(rootProject.file("apps/soundpack/assets")) {
+        exclude("biometunes/raw-soundtracks/**")
+        into("assets")
+    }
     from(rootProject.file("apps/soundpack/pack.png")) {
         into("assets/biometunes")
         rename { "icon.png" }

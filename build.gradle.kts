@@ -49,7 +49,9 @@ tasks.register<Zip>("packageSoundpack") {
     archiveBaseName.set("biometunes-soundpack")
     archiveVersion.set(providers.gradleProperty("mod_version"))
     destinationDirectory.set(layout.buildDirectory.dir("distributions"))
-    from("apps/soundpack")
+    from("apps/soundpack") {
+        exclude("assets/biometunes/raw-soundtracks/**")
+    }
     from("LICENSE") {
         into("META-INF")
         rename { "LICENSE_BIOMETUNES" }
@@ -132,6 +134,8 @@ class DistributionArchiveValidator {
 
         verifyOggInventory("Fabric JAR", jar.oggEntries(), expectedOggs)
         verifyOggInventory("standalone soundpack ZIP", zip.oggEntries(), expectedOggs)
+        jar.requireNoEntriesUnder("assets/biometunes/raw-soundtracks/")
+        zip.requireNoEntriesUnder("assets/biometunes/raw-soundtracks/")
         jar.requireBytes("assets/biometunes/biometunes/tracks.json", catalogBytes)
         jar.requireBytes("assets/biometunes/sounds.json", soundsBytes)
         zip.requireBytes("assets/biometunes/sounds.json", soundsBytes)
@@ -297,6 +301,14 @@ class DistributionArchiveValidator {
 
         fun oggEntries(): Set<String> = contents.keys.filterTo(linkedSetOf()) { name ->
             name.endsWith(".ogg")
+        }
+
+        fun requireNoEntriesUnder(prefix: String) {
+            val unexpected = contents.keys.filter { name -> name.startsWith(prefix) }.sorted()
+            requireValue(
+                unexpected.isEmpty(),
+                "$label contains build-excluded entries under $prefix: $unexpected",
+            )
         }
 
         fun bytes(entry: String): ByteArray = contents[entry]

@@ -12,6 +12,7 @@ data class BiomeTunesConfig(
     val biomeNotifications: Boolean = false,
     val bossMusic: Boolean = true,
     val bossNotifications: Boolean = false,
+    val environmentalDebugHud: Boolean = false,
 ) {
     fun normalized() = copy(
         volume = volume.coerceIn(0f, 1f),

@@ -38,6 +38,7 @@ class ResourceConsistencyTest {
             "options.biometunes.biome_notifications" to "Biome notifications",
             "options.biometunes.boss_music" to "Boss music",
             "options.biometunes.boss_notifications" to "Boss notifications",
+            "options.biometunes.environmental_debug_hud" to "Environmental Debug HUD",
             "message.biometunes.biome" to "Now playing: %s",
             "message.biometunes.boss" to "Boss music: %s",
         )
@@ -62,8 +63,9 @@ class ResourceConsistencyTest {
 
         val expectedTrackIds = setOf(
             "birch_forest", "dark_forest", "desert", "ender_dragon", "flower_forest",
-            "forest", "jungle", "mountains", "ocean", "plains", "savanna", "snowy",
-            "snowy_ocean", "the_end", "warm_ocean",
+            "forest", "frozen_ocean", "jungle", "mountains", "mountains_2", "nether_wastes",
+            "ocean", "plains", "savanna", "snowy", "snowy_ocean", "swamp", "taiga", "the_end",
+            "underground", "warm_ocean",
         )
         val tracks = catalogJson.getValue("tracks").jsonArray.map { it.jsonObject }
         val trackIds = tracks.map { it.getValue("id").jsonPrimitive.content }.toSet()
@@ -76,7 +78,7 @@ class ResourceConsistencyTest {
         }
 
         // Catches a duplicate or otherwise extra catalog track entry.
-        assertEquals(15, tracks.size, "catalog must contain exactly 15 track entries")
+        assertEquals(21, tracks.size, "catalog must contain exactly 21 track entries")
         assertEquals(tracks.size, trackIds.size, "catalog track IDs must be unique")
         assertEquals(expectedTrackIds, trackIds)
         // Catches any non-music or otherwise extra sound-event key in sounds.json.
@@ -116,6 +118,25 @@ class ResourceConsistencyTest {
         val actual = catalogJson.getValue("biomes").jsonObject.keys
 
         assertEquals(expected, actual)
+    }
+
+    @Test
+    fun `bundled environmental classification is configured only for the overworld`() {
+        val profiles = readCatalog().getValue("environmental_profiles").jsonObject
+
+        assertEquals(setOf("minecraft:overworld"), profiles.keys)
+        assertEquals(
+            setOf(
+                "minecraft:deep_dark",
+                "minecraft:dripstone_caves",
+                "minecraft:lush_caves",
+                "minecraft:sulfur_caves",
+            ),
+            profiles.getValue("minecraft:overworld").jsonObject
+                .getValue("native_underground_biomes").jsonArray
+                .map { it.jsonPrimitive.content }
+                .toSet(),
+        )
     }
 
     private fun readCatalog() = Json.parseToJsonElement(

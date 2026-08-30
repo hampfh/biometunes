@@ -7,9 +7,15 @@ interface AudioHandle
 interface AudioAdapter {
     fun start(track: TrackDefinition, initialGain: Float): AudioHandle?
     fun setGain(handle: AudioHandle, gain: Float)
+    fun setLowPass(handle: AudioHandle, highFrequencyGain: Float) {}
+    fun setTreatment(treatment: AudioTreatment) {}
     fun stop(handle: AudioHandle)
     fun isPlaying(handle: AudioHandle): Boolean
     fun setVanillaMusicSuppressed(suppressed: Boolean)
 }
 
-data class PlaybackOptions(val volume: Float, val crossfadeTicks: Int)
+data class PlaybackOptions(
+    val volume: Float,
+    val crossfadeTicks: Int,
+    val treatment: AudioTreatment = AudioTreatment.NONE,
+)

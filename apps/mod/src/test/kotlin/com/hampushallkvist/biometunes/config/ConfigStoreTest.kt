@@ -23,6 +23,7 @@ class ConfigStoreTest {
                 biomeNotifications = false,
                 bossMusic = true,
                 bossNotifications = false,
+                environmentalDebugHud = false,
             ),
             BiomeTunesConfig(),
         )
@@ -52,6 +53,7 @@ class ConfigStoreTest {
             biomeNotifications = true,
             bossMusic = false,
             bossNotifications = true,
+            environmentalDebugHud = true,
         )
         val store = ConfigStore(path) { _, _ -> }
 
@@ -60,6 +62,7 @@ class ConfigStoreTest {
         assertEquals(settings, store.load())
         val saved = Files.readString(path)
         assertTrue(saved.contains("\"crossfadeSeconds\": 7.5"))
+        assertTrue(saved.contains("\"environmentalDebugHud\": true"))
         assertTrue(saved.contains("\n"))
     }
 
@@ -90,6 +93,7 @@ class ConfigStoreTest {
                 biomeNotifications = true,
                 bossMusic = false,
                 bossNotifications = true,
+                environmentalDebugHud = false,
             ),
             ConfigStore(path) { _, _ -> }.load(),
         )

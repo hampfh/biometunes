@@ -17,6 +17,9 @@ class BiomeTunesSoundInstance(
     RandomSource.create(),
 ), AudioHandle {
     private var gain = initialGain
+    @Volatile
+    var requestedHighFrequencyGain = 1.0f
+        private set
 
     init {
         looping = true
@@ -27,6 +30,10 @@ class BiomeTunesSoundInstance(
 
     fun setGain(value: Float) {
         gain = value.coerceIn(0f, 1f)
+    }
+
+    fun setRequestedHighFrequencyGain(value: Float) {
+        requestedHighFrequencyGain = value.coerceIn(0.0f, 1.0f)
     }
 
     override fun getVolume(): Float = gain

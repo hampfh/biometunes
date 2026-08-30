@@ -3,12 +3,31 @@ package com.hampushallkvist.biometunes.client
 import com.hampushallkvist.biometunes.catalog.TrackCatalog
 import com.hampushallkvist.biometunes.catalog.TrackDefinition
 import com.hampushallkvist.biometunes.catalog.TrackId
+import com.hampushallkvist.biometunes.catalog.SilenceDurationRange
+import com.hampushallkvist.biometunes.catalog.TrackPool
+import com.hampushallkvist.biometunes.catalog.WeightedSilence
+import com.hampushallkvist.biometunes.catalog.WeightedTrack
 import com.hampushallkvist.biometunes.config.BiomeTunesConfig
+import com.hampushallkvist.biometunes.environment.EnvironmentalClassificationResult
+import com.hampushallkvist.biometunes.environment.DecisionBasis
+import com.hampushallkvist.biometunes.environment.EnvironmentConstraints
+import com.hampushallkvist.biometunes.environment.EnvironmentMode
+import com.hampushallkvist.biometunes.environment.EnvironmentalDiagnostics
+import com.hampushallkvist.biometunes.environment.EnvironmentalEvidence
+import com.hampushallkvist.biometunes.environment.EnvironmentalProfile
+import com.hampushallkvist.biometunes.environment.EnvironmentalSampling
+import com.hampushallkvist.biometunes.environment.EnvironmentalScores
+import com.hampushallkvist.biometunes.environment.EnvironmentalThresholds
+import com.hampushallkvist.biometunes.environment.EnvironmentalWeights
+import com.hampushallkvist.biometunes.environment.NotClassifiedReason
+import com.hampushallkvist.biometunes.environment.ShelteredAudioSettings
 import com.hampushallkvist.biometunes.playback.AudioAdapter
 import com.hampushallkvist.biometunes.playback.AudioHandle
 import com.hampushallkvist.biometunes.playback.PlaybackController
 import com.hampushallkvist.biometunes.selection.BossEncounter
+import com.hampushallkvist.biometunes.selection.BoundedRandom
 import com.hampushallkvist.biometunes.selection.PlayerContext
+import com.hampushallkvist.biometunes.selection.TrackPoolSelector
 import com.hampushallkvist.biometunes.selection.TrackResolver
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -17,6 +36,241 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class MusicDirectorTest {
+    @Test
+    fun `outside to sheltered keeps the selected voice and changes only its treatment`() {
+        val adapter = DirectorAudioAdapter()
+        val director = director(adapter)
+        val profile = EnvironmentalProfile(
+            nativeUndergroundBiomes = emptySet(),
+            subterraneanTracks = pool(desert),
+            sampling = EnvironmentalSampling(6, 2, 48),
+            weights = EnvironmentalWeights(1.0, 0.25, 0.25, 1.0, 0.25, 0.15, 0.05),
+            thresholds = EnvironmentalThresholds(0.65, 0.45, 0.70, 0.55, 0.25, 0.40),
+            smoothingSeconds = 0.0,
+            shelteredAudio = ShelteredAudioSettings(0.85f, 0.35f),
+        )
+        val environmentCatalog = catalog.copy(
+            environmentalProfiles = mapOf("minecraft:overworld" to profile),
+        )
+
+        director.tick(environmentalContext(EnvironmentMode.OUTSIDE, 0.0f), environmentCatalog, config())
+        director.tick(environmentalContext(EnvironmentMode.SHELTERED, 1.0f), environmentCatalog, config())
+
+        assertEquals(listOf(forest.id), adapter.starts)
+        assertEquals(0.85f, adapter.gainChanges.last().second, absoluteTolerance = 0.000_1f)
+        assertEquals(forest.id, adapter.lowPassChanges.last().first)
+        assertEquals(0.35f, adapter.lowPassChanges.last().second, absoluteTolerance = 0.000_1f)
+    }
+
+    @Test
+    fun `changing biome rerolls during an unchanged boss encounter`() {
+        val adapter = DirectorAudioAdapter()
+        val rolls = ArrayDeque(listOf(0L, 1L))
+        val director = MusicDirector(
+            TrackResolver(
+                TrackPoolSelector(BoundedRandom { bound ->
+                    rolls.removeFirst().also { require(it in 0 until bound) }
+                }),
+            ),
+            PlaybackController(adapter),
+        )
+        val bossCatalog = catalog.copy(
+            bosses = mapOf(
+                "ender_dragon" to TrackPool(
+                    listOf(
+                        WeightedTrack(forest.id, weight = 1),
+                        WeightedTrack(desert.id, weight = 1),
+                    ),
+                ),
+            ),
+        )
+
+        director.tick(dragonOverPlains, bossCatalog, config())
+        director.tick(context("minecraft:desert", BossEncounter.ENDER_DRAGON), bossCatalog, config())
+
+        assertEquals(listOf(forest.id, desert.id), adapter.starts)
+    }
+
+    @Test
+    fun `paused ticks do not consume an active silence duration`() {
+        val adapter = DirectorAudioAdapter()
+        val rolls = ArrayDeque(listOf(0L, 0L, 1L))
+        val director = MusicDirector(
+            TrackResolver(
+                TrackPoolSelector(BoundedRandom { bound ->
+                    rolls.removeFirst().also { require(it in 0 until bound) }
+                }),
+            ),
+            PlaybackController(adapter),
+        )
+        val silenceCatalog = catalog.copy(
+            biomes = catalog.biomes + (
+                "minecraft:plains" to TrackPool(
+                    listOf(
+                        WeightedSilence(1, SilenceDurationRange(1, 1)),
+                        WeightedTrack(forest.id, weight = 1),
+                    ),
+                )
+            ),
+        )
+
+        repeat(25) { director.tick(plains, silenceCatalog, config(), paused = true) }
+        repeat(20) { director.tick(plains, silenceCatalog, config()) }
+
+        assertTrue(adapter.starts.isEmpty())
+        assertTrue(adapter.vanillaMusicSuppressed)
+
+        director.tick(plains, silenceCatalog, config())
+
+        assertEquals(listOf(forest.id), adapter.starts)
+    }
+
+    @Test
+    fun `changing biome rerolls even when both biomes use the same weighted pool`() {
+        val adapter = DirectorAudioAdapter()
+        val rolls = ArrayDeque(listOf(0L, 1L))
+        val director = MusicDirector(
+            TrackResolver(
+                TrackPoolSelector(BoundedRandom { bound ->
+                    rolls.removeFirst().also { require(it in 0 until bound) }
+                }),
+            ),
+            PlaybackController(adapter),
+        )
+        val sharedPool = TrackPool(
+            listOf(
+                WeightedTrack(forest.id, weight = 1),
+                WeightedTrack(desert.id, weight = 1),
+            ),
+        )
+        val sharedCatalog = catalog.copy(
+            biomes = catalog.biomes + mapOf(
+                "minecraft:plains" to sharedPool,
+                "minecraft:grove" to sharedPool,
+            ),
+        )
+
+        director.tick(plains, sharedCatalog, config())
+        director.tick(grove, sharedCatalog, config())
+
+        assertEquals(listOf(forest.id, desert.id), adapter.starts)
+    }
+
+    @Test
+    fun `disabled boss changes do not reroll an unchanged biome pool`() {
+        val adapter = DirectorAudioAdapter()
+        val rolls = ArrayDeque(listOf(0L))
+        val director = MusicDirector(
+            TrackResolver(
+                TrackPoolSelector(BoundedRandom { bound ->
+                    rolls.removeFirst().also { require(it in 0 until bound) }
+                }),
+            ),
+            PlaybackController(adapter),
+        )
+        val bossDisabled = config(bossMusic = false)
+
+        director.tick(plains, catalog, bossDisabled)
+        director.tick(dragonOverPlains, catalog, bossDisabled)
+
+        assertEquals(listOf(forest.id), adapter.starts)
+        assertEquals(setOf(forest.id), adapter.playingTrackIds)
+    }
+
+    @Test
+    fun `silence duration starts only after the previous track has faded out`() {
+        val adapter = DirectorAudioAdapter()
+        val rolls = ArrayDeque(listOf(0L, 0L, 0L))
+        val director = MusicDirector(
+            TrackResolver(
+                TrackPoolSelector(BoundedRandom { bound ->
+                    rolls.removeFirst().also { require(it in 0 until bound) }
+                }),
+            ),
+            PlaybackController(adapter),
+        )
+        val silenceCatalog = catalog.copy(
+            biomes = catalog.biomes + (
+                "minecraft:desert" to TrackPool(
+                    listOf(WeightedSilence(1, SilenceDurationRange(1, 1))),
+                )
+            ),
+        )
+
+        director.tick(plains, silenceCatalog, config())
+        repeat(21) { director.tick(context("minecraft:desert"), silenceCatalog, config()) }
+
+        assertEquals(listOf(forest.id), adapter.starts)
+        assertEquals(setOf(forest.id), adapter.playingTrackIds)
+        assertTrue(adapter.vanillaMusicSuppressed)
+    }
+
+    @Test
+    fun `inline silence suppresses vanilla music for its sampled duration then rerolls`() {
+        val adapter = DirectorAudioAdapter()
+        val rolls = ArrayDeque(listOf(1L, 0L, 0L))
+        val director = MusicDirector(
+            TrackResolver(
+                TrackPoolSelector(BoundedRandom { bound ->
+                    rolls.removeFirst().also { require(it in 0 until bound) }
+                }),
+            ),
+            PlaybackController(adapter),
+        )
+        val silenceCatalog = catalog.copy(
+            biomes = catalog.biomes + (
+                "minecraft:plains" to TrackPool(
+                    listOf(
+                        WeightedTrack(forest.id, weight = 1),
+                        WeightedSilence(1, SilenceDurationRange(1, 1)),
+                    ),
+                )
+            ),
+        )
+
+        director.tick(plains, silenceCatalog, config())
+        repeat(19) { director.tick(plains, silenceCatalog, config()) }
+
+        assertTrue(adapter.vanillaMusicSuppressed)
+        assertTrue(adapter.starts.isEmpty())
+
+        director.tick(plains, silenceCatalog, config())
+
+        assertEquals(listOf(forest.id), adapter.starts)
+        assertEquals(setOf(forest.id), adapter.playingTrackIds)
+    }
+
+    @Test
+    fun `finished track rerolls its biome pool before starting the next track`() {
+        val adapter = DirectorAudioAdapter()
+        val rolls = ArrayDeque(listOf(0L, 1L))
+        val director = MusicDirector(
+            TrackResolver(
+                TrackPoolSelector(BoundedRandom { bound ->
+                    rolls.removeFirst().also { require(it in 0 until bound) }
+                }),
+            ),
+            PlaybackController(adapter),
+        )
+        val rerollCatalog = catalog.copy(
+            biomes = catalog.biomes + (
+                "minecraft:plains" to TrackPool(
+                    listOf(
+                        WeightedTrack(forest.id, weight = 1),
+                        WeightedTrack(desert.id, weight = 1),
+                    ),
+                )
+            ),
+        )
+
+        director.tick(plains, rerollCatalog, config())
+        adapter.finish(forest.id)
+        director.tick(plains, rerollCatalog, config())
+
+        assertEquals(listOf(forest.id, desert.id), adapter.starts)
+        assertEquals(setOf(desert.id), adapter.playingTrackIds)
+    }
+
     @Test
     fun `null context stops owned playback and releases vanilla music`() {
         // Catches a mutation that keeps the last biome playing while no player context is available.
@@ -166,7 +420,7 @@ class MusicDirectorTest {
     fun `boss entry and exit change notice family even when both selections share one track`() {
         // Catches notification de-duplication by TrackId without preserving boss-versus-biome transitions.
         val adapter = DirectorAudioAdapter()
-        val sharedBossCatalog = catalog.copy(bosses = mapOf("ender_dragon" to forest.id))
+        val sharedBossCatalog = catalog.copy(bosses = mapOf("ender_dragon" to pool(forest)))
         val director = director(adapter)
         val enabled = config(biomeNotifications = true, bossNotifications = true)
 
@@ -221,17 +475,22 @@ class MusicDirectorTest {
     }
 
     private fun director(adapter: DirectorAudioAdapter) =
-        MusicDirector(TrackResolver(), PlaybackController(adapter))
+        MusicDirector(
+            TrackResolver(TrackPoolSelector(BoundedRandom { 0 })),
+            PlaybackController(adapter),
+        )
 
     private fun config(
         enabled: Boolean = true,
         crossfadeSeconds: Float = 5f,
         biomeNotifications: Boolean = false,
+        bossMusic: Boolean = true,
         bossNotifications: Boolean = false,
     ) = BiomeTunesConfig(
         enabled = enabled,
         crossfadeSeconds = crossfadeSeconds,
         biomeNotifications = biomeNotifications,
+        bossMusic = bossMusic,
         bossNotifications = bossNotifications,
     )
 
@@ -241,15 +500,17 @@ class MusicDirectorTest {
         val dragon = track("dragon", "Dragon Song")
         val catalog = TrackCatalog(
             tracks = listOf(forest, desert, dragon).associateBy(TrackDefinition::id),
-            bosses = mapOf("ender_dragon" to dragon.id),
+            globalSilence = WeightedSilence(1, SilenceDurationRange(30, 120)),
+            bosses = mapOf("ender_dragon" to pool(dragon)),
             biomes = mapOf(
-                "minecraft:plains" to forest.id,
-                "minecraft:grove" to forest.id,
-                "minecraft:desert" to desert.id,
+                "minecraft:plains" to pool(forest),
+                "minecraft:grove" to pool(forest),
+                "minecraft:desert" to pool(desert),
             ),
             biomeTags = emptyList(),
-            dimensions = mapOf("minecraft:the_nether" to desert.id),
-            fallback = forest.id,
+            dimensions = mapOf("minecraft:the_nether" to pool(desert)),
+            environmentalProfiles = emptyMap(),
+            fallback = pool(forest),
         )
         val plains = context("minecraft:plains")
         val grove = context("minecraft:grove")
@@ -262,11 +523,35 @@ class MusicDirectorTest {
             artist = "Test Artist",
         )
 
+        fun pool(track: TrackDefinition) = TrackPool(listOf(WeightedTrack(track.id, weight = 9)))
+
         fun context(biomeId: String, boss: BossEncounter? = null) = PlayerContext(
             biomeId = biomeId,
             biomeTags = emptySet(),
             dimensionId = "minecraft:overworld",
             boss = boss,
+            environmentalClassification = EnvironmentalClassificationResult.NotClassified(
+                NotClassifiedReason.NO_PROFILE,
+            ),
+        )
+
+        fun environmentalContext(mode: EnvironmentMode, shelterIntensity: Float) = PlayerContext(
+            biomeId = "minecraft:plains",
+            biomeTags = emptySet(),
+            dimensionId = "minecraft:overworld",
+            boss = null,
+            environmentalClassification = EnvironmentalClassificationResult.Classified(
+                mode = mode,
+                shelterIntensity = shelterIntensity,
+                diagnostics = EnvironmentalDiagnostics(
+                    profileDimensionId = "minecraft:overworld",
+                    evidence = EnvironmentalEvidence(false, 0, 9, 1.0, 0.5, 0, 0),
+                    rawScores = EnvironmentalScores(0.2, 0.4),
+                    smoothedScores = EnvironmentalScores(0.2, 0.4),
+                    constraints = EnvironmentConstraints(false, true),
+                    decisionBasis = DecisionBasis.WEIGHTED_SCORES,
+                ),
+            ),
         )
     }
 }
@@ -284,6 +569,7 @@ private class DirectorAudioAdapter : AudioAdapter {
     val starts = mutableListOf<TrackId>()
     val stops = mutableListOf<TrackId>()
     val gainChanges = mutableListOf<Pair<TrackId, Float>>()
+    val lowPassChanges = mutableListOf<Pair<TrackId, Float>>()
     val suppressionChanges = mutableListOf<Boolean>()
 
     var vanillaMusicSuppressed = false
@@ -291,6 +577,10 @@ private class DirectorAudioAdapter : AudioAdapter {
 
     val playingTrackIds: Set<TrackId>
         get() = instances.values.filter(Instance::playing).mapTo(linkedSetOf()) { it.track.id }
+
+    fun finish(trackId: TrackId) {
+        instances.values.single { it.track.id == trackId && it.playing }.playing = false
+    }
 
     override fun start(track: TrackDefinition, initialGain: Float): AudioHandle =
         Handle(nextSerial++).also { handle ->
@@ -302,6 +592,11 @@ private class DirectorAudioAdapter : AudioAdapter {
         val instance = instances.getValue(handle as Handle)
         instance.gain = gain
         gainChanges += instance.track.id to gain
+    }
+
+    override fun setLowPass(handle: AudioHandle, highFrequencyGain: Float) {
+        val instance = instances.getValue(handle as Handle)
+        lowPassChanges += instance.track.id to highFrequencyGain
     }
 
     override fun stop(handle: AudioHandle) {

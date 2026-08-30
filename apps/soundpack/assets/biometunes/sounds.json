@@ -29,6 +29,11 @@
     "subtitle": "subtitles.biometunes.music.forest",
     "sounds": [{ "name": "biometunes:music/forest", "stream": true }]
   },
+  "music.frozen_ocean": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.frozen_ocean",
+    "sounds": [{ "name": "biometunes:music/frozen_ocean", "stream": true }]
+  },
   "music.jungle": {
     "category": "music",
     "subtitle": "subtitles.biometunes.music.jungle",
@@ -38,6 +43,16 @@
     "category": "music",
     "subtitle": "subtitles.biometunes.music.mountains",
     "sounds": [{ "name": "biometunes:music/mountains", "stream": true }]
+  },
+  "music.mountains_2": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.mountains_2",
+    "sounds": [{ "name": "biometunes:music/mountains_2", "stream": true }]
+  },
+  "music.nether_wastes": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.nether_wastes",
+    "sounds": [{ "name": "biometunes:music/nether_wastes", "stream": true }]
   },
   "music.ocean": {
     "category": "music",
@@ -64,10 +79,25 @@
     "subtitle": "subtitles.biometunes.music.snowy_ocean",
     "sounds": [{ "name": "biometunes:music/snowy_ocean", "stream": true }]
   },
+  "music.swamp": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.swamp",
+    "sounds": [{ "name": "biometunes:music/swamp", "stream": true }]
+  },
+  "music.taiga": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.taiga",
+    "sounds": [{ "name": "biometunes:music/taiga", "stream": true }]
+  },
   "music.the_end": {
     "category": "music",
     "subtitle": "subtitles.biometunes.music.the_end",
     "sounds": [{ "name": "biometunes:music/the_end", "stream": true }]
+  },
+  "music.underground": {
+    "category": "music",
+    "subtitle": "subtitles.biometunes.music.underground",
+    "sounds": [{ "name": "biometunes:music/underground", "stream": true }]
   },
   "music.warm_ocean": {
     "category": "music",
