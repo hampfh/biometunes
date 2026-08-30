@@ -7,18 +7,21 @@ import com.hampushallkvist.biometunes.playback.PlaybackController
 import com.hampushallkvist.biometunes.selection.PlayerContext
 import com.hampushallkvist.biometunes.selection.TrackResolver
 import com.hampushallkvist.biometunes.ui.BiomeTunesConfigScreen
+import com.hampushallkvist.biometunes.ui.EnvironmentalDebugHud
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.gui.screens.WinScreen
 import net.minecraft.network.chat.Component
+import net.minecraft.resources.Identifier
 import net.minecraft.server.packs.PackType
 import org.slf4j.LoggerFactory
 
@@ -46,12 +49,22 @@ object BiomeTunesClient : ClientModInitializer {
         audioAdapter = MinecraftAudioAdapter(client)
         director = MusicDirector(TrackResolver(), PlaybackController(audioAdapter))
         sampler = MinecraftContextSampler(client)
+        HudElementRegistry.addLast(
+            Identifier.fromNamespaceAndPath("biometunes", "environmental_debug_hud"),
+            EnvironmentalDebugHud(
+                config = { currentConfig },
+                context = { cachedContext },
+                audio = { audioAdapter.treatmentDiagnostics },
+            ),
+        )
         catalogReloadListener = TrackCatalogReloadListener(
             state = reloadableCatalog,
             onReload = audioAdapter::clearUnavailableSounds,
             onAccepted = {
                 director.stop()
+                audioAdapter.resetAudioTreatment()
                 cachedContext = null
+                sampler.resetEnvironmentalClassification()
                 playbackLifecycle.forceFreshSample()
             },
         )
@@ -59,8 +72,16 @@ object BiomeTunesClient : ClientModInitializer {
         ResourceManagerHelper.get(PackType.CLIENT_RESOURCES)
             .registerReloadListener(catalogReloadListener)
         ClientTickEvents.END_CLIENT_TICK.register(::tick)
-        ClientPlayConnectionEvents.DISCONNECT.register { _, _ -> director.stop() }
-        ClientLifecycleEvents.CLIENT_STOPPING.register { director.stop() }
+        ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
+            director.stop()
+            audioAdapter.resetAudioTreatment()
+            cachedContext = null
+            sampler.resetEnvironmentalClassification()
+        }
+        ClientLifecycleEvents.CLIENT_STOPPING.register {
+            director.stop()
+            audioAdapter.resetAudioTreatment()
+        }
         ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
             dispatcher.register(
                 ClientCommands.literal("biometunes").executes {
@@ -94,18 +115,22 @@ object BiomeTunesClient : ClientModInitializer {
             playerIdentity = client.player,
             isEndCredits = client.gui.screen() is WinScreen,
         )
-        if (lifecycle.stopPlayback) director.stop()
+        if (lifecycle.stopPlayback) {
+            director.stop()
+            audioAdapter.resetAudioTreatment()
+        }
         if (lifecycle.clearContext) {
             cachedContext = null
+            sampler.resetEnvironmentalClassification()
         }
         if (!lifecycle.activeGameplay) return
-        if (lifecycle.sampleContext) cachedContext = sampler.sample()
 
         val catalog = catalogReloadListener.current
         if (catalog == null) {
             director.stop()
             return
         }
+        if (lifecycle.sampleContext) cachedContext = sampler.sample(catalog)
 
         director.tick(cachedContext, catalog, currentConfig, client.isPaused())?.let { notice ->
             client.player?.sendOverlayMessage(

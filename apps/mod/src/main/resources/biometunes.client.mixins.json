@@ -3,6 +3,11 @@
   "minVersion": "0.8",
   "package": "com.hampushallkvist.biometunes.mixin",
   "compatibilityLevel": "JAVA_25",
-  "client": ["MusicManagerMixin"],
+  "client": [
+    "ChannelAccessor",
+    "MusicManagerMixin",
+    "SoundEngineAccessor",
+    "SoundManagerAccessor"
+  ],
   "injectors": { "defaultRequire": 1 }
 }

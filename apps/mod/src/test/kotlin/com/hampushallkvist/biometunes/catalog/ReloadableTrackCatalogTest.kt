@@ -33,11 +33,16 @@ class ReloadableTrackCatalogTest {
           "tracks": [
             { "id": "$trackId", "sound_event": "biometunes:music.$trackId", "title": "${trackId.replaceFirstChar(Char::uppercase)}", "artist": "Abraham Frato" }
           ],
+          "silence": {
+            "weight": 1,
+            "duration_seconds": { "min": 30, "max": 120 }
+          },
           "bosses": {},
           "biomes": {},
           "biome_tags": [],
           "dimensions": {},
-          "fallback": "$fallback"
+          "environmental_profiles": {},
+          "fallback": [{ "track": "$fallback", "weight": 9 }]
         }
     """.trimIndent()
 }

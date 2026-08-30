@@ -32,6 +32,7 @@ class BiomeTunesConfigScreen(
         controls.addChild(biomeNotificationsButton(), 1, 1)
         controls.addChild(bossMusicButton(), 2, 0)
         controls.addChild(bossNotificationsButton(), 2, 1)
+        controls.addChild(environmentalDebugHudButton(), 3, 0)
         layout.addToContents(controls)
 
         val actions = LinearLayout.horizontal().spacing(COLUMN_SPACING)
@@ -77,6 +78,11 @@ class BiomeTunesConfigScreen(
         CycleButton.onOffBuilder(workingConfig.bossNotifications).create(
             Component.translatable("options.biometunes.boss_notifications"),
         ) { _, enabled -> workingConfig = workingConfig.copy(bossNotifications = enabled) }
+
+    private fun environmentalDebugHudButton() =
+        CycleButton.onOffBuilder(workingConfig.environmentalDebugHud).create(
+            Component.translatable("options.biometunes.environmental_debug_hud"),
+        ) { _, enabled -> workingConfig = workingConfig.copy(environmentalDebugHud = enabled) }
 
     private abstract inner class SteppedSlider(
         initialValue: Double,

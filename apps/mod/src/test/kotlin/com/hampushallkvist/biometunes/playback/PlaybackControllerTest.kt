@@ -10,6 +10,40 @@ import kotlin.test.assertTrue
 
 class PlaybackControllerTest {
     @Test
+    fun `treatment multiplies every live voice gain and applies the same low pass`() {
+        val session = Session()
+        val treated = PlaybackOptions(
+            volume = 0.5f,
+            crossfadeTicks = 100,
+            treatment = AudioTreatment(gainMultiplier = 0.8f, highFrequencyGain = 0.4f),
+        )
+        session.tick(trackA, treated)
+        session.tick(trackB, treated)
+        repeat(50) { session.tick(trackB, treated) }
+
+        assertEquals(equalPowerGain(0.5) * 0.5f * 0.8f, session.adapter.gainFor(trackA.id), 0.0002f)
+        assertEquals(equalPowerGain(0.5) * 0.5f * 0.8f, session.adapter.gainFor(trackB.id), 0.0002f)
+        assertEquals(0.4f, session.adapter.lowPassFor(trackA.id))
+        assertEquals(0.4f, session.adapter.lowPassFor(trackB.id))
+    }
+
+    @Test
+    fun `silence fades retain current treatment until voices stop`() {
+        val session = Session()
+        session.tick(trackA, PlaybackOptions(1.0f, 100))
+        val treated = PlaybackOptions(
+            volume = 0.6f,
+            crossfadeTicks = 100,
+            treatment = AudioTreatment(gainMultiplier = 0.75f, highFrequencyGain = 0.2f),
+        )
+
+        session.controller.updateSilence(treated)
+
+        assertEquals(equalPowerGain(0.99) * 0.6f * 0.75f, session.adapter.gainFor(trackA.id), 0.0002f)
+        assertEquals(0.2f, session.adapter.lowPassFor(trackA.id))
+    }
+
+    @Test
     fun `equal power gain reaches both endpoints and holds constant power across a fade`() {
         // Catches mutations that invert the curve or use linear fade gains.
         assertEquals(0f, equalPowerGain(0.0), 0.0001f)
@@ -509,6 +543,7 @@ private class FakeAudioAdapter : AudioAdapter {
     private data class Instance(
         val track: TrackDefinition,
         var gain: Float,
+        var highFrequencyGain: Float = 1.0f,
         var playing: Boolean = true,
     )
 
@@ -545,6 +580,10 @@ private class FakeAudioAdapter : AudioAdapter {
         instance.gain = gain
     }
 
+    override fun setLowPass(handle: AudioHandle, highFrequencyGain: Float) {
+        instances.getValue(handle as FakeAudioHandle).highFrequencyGain = highFrequencyGain
+    }
+
     override fun stop(handle: AudioHandle) {
         val instance = requireNotNull(instances.remove(handle as FakeAudioHandle)) {
             "attempted to stop an unknown or already-disposed handle $handle"
@@ -563,6 +602,9 @@ private class FakeAudioAdapter : AudioAdapter {
 
     fun gainFor(trackId: TrackId): Float =
         instances.values.single { it.track.id == trackId }.gain
+
+    fun lowPassFor(trackId: TrackId): Float =
+        instances.values.single { it.track.id == trackId }.highFrequencyGain
 
     fun gains(): Map<TrackId, Float> = instances.values.associate { it.track.id to it.gain }
 

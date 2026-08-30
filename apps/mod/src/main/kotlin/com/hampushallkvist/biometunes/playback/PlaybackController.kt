@@ -3,6 +3,12 @@ package com.hampushallkvist.biometunes.playback
 import com.hampushallkvist.biometunes.catalog.TrackDefinition
 import com.hampushallkvist.biometunes.catalog.TrackId
 
+enum class PlaybackUpdateResult {
+    CONTINUING,
+    TRACK_ENDED,
+    SILENT,
+}
+
 /**
  * Mixes the live tracks toward the desired one.
  *
@@ -26,19 +32,47 @@ class PlaybackController(private val adapter: AudioAdapter) {
         desired: TrackDefinition,
         options: PlaybackOptions,
         advanceFade: Boolean = true,
-    ) {
+        restartEnded: Boolean = true,
+    ): PlaybackUpdateResult {
         val normalized = options.normalized()
         val endedProgress = pruneEndedVoices()
+        if (desired.id in endedProgress && !restartEnded) return PlaybackUpdateResult.TRACK_ENDED
         val started = ensureDesiredVoice(desired, normalized, endedProgress)
         if (voices.isEmpty()) {
             adapter.setVanillaMusicSuppressed(false)
-            return
+            return PlaybackUpdateResult.CONTINUING
         }
         if (advanceFade && !started) advanceFade(desired, normalized.crossfadeTicks)
+        adapter.setTreatment(normalized.treatment)
         voices.forEach { voice ->
-            adapter.setGain(voice.handle, equalPowerGain(voice.progress) * normalized.volume)
+            adapter.setGain(
+                voice.handle,
+                equalPowerGain(voice.progress) * normalized.volume * normalized.treatment.gainMultiplier,
+            )
+            adapter.setLowPass(voice.handle, normalized.treatment.highFrequencyGain)
         }
         adapter.setVanillaMusicSuppressed(true)
+        return PlaybackUpdateResult.CONTINUING
+    }
+
+    /** Fades owned voices toward silence while continuing to block vanilla music. */
+    fun updateSilence(
+        options: PlaybackOptions,
+        advanceFade: Boolean = true,
+    ): PlaybackUpdateResult {
+        val normalized = options.normalized()
+        pruneEndedVoices()
+        if (advanceFade) advanceFadeToSilence(normalized.crossfadeTicks)
+        adapter.setTreatment(normalized.treatment)
+        voices.forEach { voice ->
+            adapter.setGain(
+                voice.handle,
+                equalPowerGain(voice.progress) * normalized.volume * normalized.treatment.gainMultiplier,
+            )
+            adapter.setLowPass(voice.handle, normalized.treatment.highFrequencyGain)
+        }
+        adapter.setVanillaMusicSuppressed(true)
+        return if (voices.isEmpty()) PlaybackUpdateResult.SILENT else PlaybackUpdateResult.CONTINUING
     }
 
     fun stop() {
@@ -78,7 +112,10 @@ class PlaybackController(private val adapter: AudioAdapter) {
         val immediate = options.crossfadeTicks == 0 || voices.isEmpty()
         val progress = if (immediate) 1.0 else endedProgress[desired.id] ?: 0.0
         disposeQuietestWhileFull()
-        val handle = adapter.start(desired, equalPowerGain(progress) * options.volume)
+        val handle = adapter.start(
+            desired,
+            equalPowerGain(progress) * options.volume * options.treatment.gainMultiplier,
+        )
         if (handle == null) {
             // Keep whatever is already playing rather than trading it for silence, and back off so a
             // repeatedly unavailable track cannot start a sound per tick.
@@ -122,9 +159,23 @@ class PlaybackController(private val adapter: AudioAdapter) {
         }
     }
 
+    private fun advanceFadeToSilence(crossfadeTicks: Int) {
+        val step = if (crossfadeTicks <= 0) 1.0 else 1.0 / crossfadeTicks
+        voices.forEach { voice -> voice.progress = (voice.progress - step).coerceAtLeast(0.0) }
+        voices.removeAll { voice ->
+            if (voice.progress > SILENT_PROGRESS) return@removeAll false
+            adapter.stop(voice.handle)
+            true
+        }
+    }
+
     private fun PlaybackOptions.normalized() = PlaybackOptions(
         volume = volume.coerceIn(0f, 1f),
         crossfadeTicks = crossfadeTicks.coerceIn(0, 300),
+        treatment = AudioTreatment(
+            gainMultiplier = treatment.gainMultiplier.coerceIn(0f, 1f),
+            highFrequencyGain = treatment.highFrequencyGain.coerceIn(0f, 1f),
+        ),
     )
 
     private companion object {
