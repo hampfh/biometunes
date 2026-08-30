@@ -40,4 +40,5 @@ data class EnvironmentalThresholds(
 data class ShelteredAudioSettings(
     val maximumGainMultiplier: Float,
     val maximumHighFrequencyGain: Float,
+    val maximumReverbSend: Float,
 )

@@ -59,6 +59,12 @@ object EnvironmentalDebugLines {
                     audio.status.name,
                     audio.attachedVoiceCount,
                 ),
+                format(
+                    "Reverb: send=%.3f | %s | Voices=%d",
+                    audio.requestedReverbSend,
+                    audio.reverbStatus.name,
+                    audio.reverbVoiceCount,
+                ),
             )
         }
     }
@@ -96,6 +102,6 @@ class EnvironmentalDebugHud(
         const val PADDING = 2
         const val LINE_HEIGHT = 9
         const val BACKGROUND_COLOR = 0x90000000.toInt()
-        const val TEXT_COLOR = 0xFFFFFF
+        const val TEXT_COLOR = 0xFFFFFFFF.toInt()
     }
 }

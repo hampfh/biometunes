@@ -6,9 +6,10 @@ import kotlin.math.min
 data class AudioTreatment(
     val gainMultiplier: Float,
     val highFrequencyGain: Float,
+    val reverbSend: Float = 0.0f,
 ) {
     companion object {
-        val NONE = AudioTreatment(gainMultiplier = 1.0f, highFrequencyGain = 1.0f)
+        val NONE = AudioTreatment(gainMultiplier = 1.0f, highFrequencyGain = 1.0f, reverbSend = 0.0f)
     }
 }
 
@@ -37,9 +38,11 @@ class ShelteredTreatmentEnvelope {
 
         val maximumGain = settings.maximumGainMultiplier.coerceIn(0.0f, 1.0f)
         val maximumHighFrequency = settings.maximumHighFrequencyGain.coerceIn(0.0f, 1.0f)
+        val maximumReverbSend = settings.maximumReverbSend.coerceIn(0.0f, 1.0f)
         return AudioTreatment(
             gainMultiplier = lerp(1.0f, maximumGain, intensity),
             highFrequencyGain = lerp(1.0f, maximumHighFrequency, intensity),
+            reverbSend = lerp(0.0f, maximumReverbSend, intensity),
         )
     }
 

@@ -6,3 +6,5 @@ BiomeTunes 0.6 makes soundtrack selection weighted and adds intentional silence 
 - Bundled single-song pools choose music 75% of the time and silence 25% of the time; two-song mountain pools choose music 6/7 of the time.
 - Boss pools use zero-weight silence entries, so boss music never selects silence.
 - Reroll the active pool whenever a track or silence interval ends.
+- Added Environmental Classification with a strong wall-occluded Sheltered treatment, short dark room reflections, and Underground soundtrack routing for generic deep caverns.
+- Sheltered biome music now retains its wall-occluded treatment while fading into Underground music or intentional silence, avoiding a sudden volume increase at the transition.

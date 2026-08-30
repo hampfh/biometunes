@@ -37,6 +37,77 @@ import kotlin.test.assertTrue
 
 class MusicDirectorTest {
     @Test
+    fun `sheltered biome voice stays treated while underground voice begins its crossfade`() {
+        val adapter = DirectorAudioAdapter()
+        val rolls = ArrayDeque(listOf(0L, 0L))
+        val director = MusicDirector(
+            TrackResolver(
+                TrackPoolSelector(BoundedRandom { bound ->
+                    rolls.removeFirst().also { require(it in 0 until bound) }
+                }),
+            ),
+            PlaybackController(adapter),
+        )
+        val profile = EnvironmentalProfile(
+            nativeUndergroundBiomes = emptySet(),
+            subterraneanTracks = pool(desert),
+            sampling = EnvironmentalSampling(6, 2, 48),
+            weights = EnvironmentalWeights(1.0, 0.25, 0.25, 1.0, 0.25, 0.15, 0.05),
+            thresholds = EnvironmentalThresholds(0.65, 0.45, 0.70, 0.55, 0.25, 0.40),
+            smoothingSeconds = 0.0,
+            shelteredAudio = ShelteredAudioSettings(0.20f, 0.0f, 0.20f),
+        )
+        val environmentCatalog = catalog.copy(
+            environmentalProfiles = mapOf("minecraft:overworld" to profile),
+        )
+
+        director.tick(environmentalContext(EnvironmentMode.SHELTERED, 1.0f), environmentCatalog, config())
+        director.tick(environmentalContext(EnvironmentMode.SUBTERRANEAN, 0.0f), environmentCatalog, config())
+
+        assertEquals(listOf(forest.id, desert.id), adapter.starts)
+        assertEquals(0.20f, adapter.gainChanges.last { it.first == forest.id }.second, absoluteTolerance = 0.000_1f)
+        assertEquals(0.0f, adapter.lowPassChanges.last { it.first == forest.id }.second, absoluteTolerance = 0.000_1f)
+        assertEquals(0.20f, adapter.reverbChanges.last { it.first == forest.id }.second, absoluteTolerance = 0.000_1f)
+        assertEquals(0.0f, adapter.gainChanges.last { it.first == desert.id }.second, absoluteTolerance = 0.000_1f)
+        assertEquals(1.0f, adapter.lowPassChanges.last { it.first == desert.id }.second, absoluteTolerance = 0.000_1f)
+        assertEquals(0.0f, adapter.reverbChanges.last { it.first == desert.id }.second, absoluteTolerance = 0.000_1f)
+    }
+
+    @Test
+    fun `subterranean silence fades the sheltered biome voice without making it louder`() {
+        val adapter = DirectorAudioAdapter()
+        val rolls = ArrayDeque(listOf(0L, 9L, 0L))
+        val director = MusicDirector(
+            TrackResolver(
+                TrackPoolSelector(BoundedRandom { bound ->
+                    rolls.removeFirst().also { require(it in 0 until bound) }
+                }),
+            ),
+            PlaybackController(adapter),
+        )
+        val profile = EnvironmentalProfile(
+            nativeUndergroundBiomes = emptySet(),
+            subterraneanTracks = pool(desert),
+            sampling = EnvironmentalSampling(6, 2, 48),
+            weights = EnvironmentalWeights(1.0, 0.25, 0.25, 1.0, 0.25, 0.15, 0.05),
+            thresholds = EnvironmentalThresholds(0.65, 0.45, 0.70, 0.55, 0.25, 0.40),
+            smoothingSeconds = 0.0,
+            shelteredAudio = ShelteredAudioSettings(0.20f, 0.0f, 0.20f),
+        )
+        val environmentCatalog = catalog.copy(
+            environmentalProfiles = mapOf("minecraft:overworld" to profile),
+        )
+
+        director.tick(environmentalContext(EnvironmentMode.SHELTERED, 1.0f), environmentCatalog, config())
+        director.tick(environmentalContext(EnvironmentMode.SUBTERRANEAN, 0.0f), environmentCatalog, config())
+
+        assertEquals(listOf(forest.id), adapter.starts)
+        assertEquals(0.199_975f, adapter.gainChanges.last { it.first == forest.id }.second, absoluteTolerance = 0.000_1f)
+        assertEquals(0.0f, adapter.lowPassChanges.last { it.first == forest.id }.second, absoluteTolerance = 0.000_1f)
+        assertEquals(0.20f, adapter.reverbChanges.last { it.first == forest.id }.second, absoluteTolerance = 0.000_1f)
+    }
+
+    @Test
     fun `outside to sheltered keeps the selected voice and changes only its treatment`() {
         val adapter = DirectorAudioAdapter()
         val director = director(adapter)
@@ -47,7 +118,7 @@ class MusicDirectorTest {
             weights = EnvironmentalWeights(1.0, 0.25, 0.25, 1.0, 0.25, 0.15, 0.05),
             thresholds = EnvironmentalThresholds(0.65, 0.45, 0.70, 0.55, 0.25, 0.40),
             smoothingSeconds = 0.0,
-            shelteredAudio = ShelteredAudioSettings(0.85f, 0.35f),
+            shelteredAudio = ShelteredAudioSettings(0.35f, 0.0f, 0.12f),
         )
         val environmentCatalog = catalog.copy(
             environmentalProfiles = mapOf("minecraft:overworld" to profile),
@@ -57,9 +128,11 @@ class MusicDirectorTest {
         director.tick(environmentalContext(EnvironmentMode.SHELTERED, 1.0f), environmentCatalog, config())
 
         assertEquals(listOf(forest.id), adapter.starts)
-        assertEquals(0.85f, adapter.gainChanges.last().second, absoluteTolerance = 0.000_1f)
+        assertEquals(0.35f, adapter.gainChanges.last().second, absoluteTolerance = 0.000_1f)
         assertEquals(forest.id, adapter.lowPassChanges.last().first)
-        assertEquals(0.35f, adapter.lowPassChanges.last().second, absoluteTolerance = 0.000_1f)
+        assertEquals(0.0f, adapter.lowPassChanges.last().second, absoluteTolerance = 0.000_1f)
+        assertEquals(forest.id, adapter.reverbChanges.last().first)
+        assertEquals(0.12f, adapter.reverbChanges.last().second, absoluteTolerance = 0.000_1f)
     }
 
     @Test
@@ -570,6 +643,7 @@ private class DirectorAudioAdapter : AudioAdapter {
     val stops = mutableListOf<TrackId>()
     val gainChanges = mutableListOf<Pair<TrackId, Float>>()
     val lowPassChanges = mutableListOf<Pair<TrackId, Float>>()
+    val reverbChanges = mutableListOf<Pair<TrackId, Float>>()
     val suppressionChanges = mutableListOf<Boolean>()
 
     var vanillaMusicSuppressed = false
@@ -597,6 +671,11 @@ private class DirectorAudioAdapter : AudioAdapter {
     override fun setLowPass(handle: AudioHandle, highFrequencyGain: Float) {
         val instance = instances.getValue(handle as Handle)
         lowPassChanges += instance.track.id to highFrequencyGain
+    }
+
+    override fun setReverb(handle: AudioHandle, send: Float) {
+        val instance = instances.getValue(handle as Handle)
+        reverbChanges += instance.track.id to send
     }
 
     override fun stop(handle: AudioHandle) {

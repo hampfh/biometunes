@@ -42,14 +42,16 @@ class PlaybackController(private val adapter: AudioAdapter) {
             adapter.setVanillaMusicSuppressed(false)
             return PlaybackUpdateResult.CONTINUING
         }
+        voices.firstOrNull { voice -> voice.track.id == desired.id }?.treatment = normalized.treatment
         if (advanceFade && !started) advanceFade(desired, normalized.crossfadeTicks)
         adapter.setTreatment(normalized.treatment)
         voices.forEach { voice ->
             adapter.setGain(
                 voice.handle,
-                equalPowerGain(voice.progress) * normalized.volume * normalized.treatment.gainMultiplier,
+                equalPowerGain(voice.progress) * normalized.volume * voice.treatment.gainMultiplier,
             )
-            adapter.setLowPass(voice.handle, normalized.treatment.highFrequencyGain)
+            adapter.setLowPass(voice.handle, voice.treatment.highFrequencyGain)
+            adapter.setReverb(voice.handle, voice.treatment.reverbSend)
         }
         adapter.setVanillaMusicSuppressed(true)
         return PlaybackUpdateResult.CONTINUING
@@ -67,9 +69,10 @@ class PlaybackController(private val adapter: AudioAdapter) {
         voices.forEach { voice ->
             adapter.setGain(
                 voice.handle,
-                equalPowerGain(voice.progress) * normalized.volume * normalized.treatment.gainMultiplier,
+                equalPowerGain(voice.progress) * normalized.volume * voice.treatment.gainMultiplier,
             )
-            adapter.setLowPass(voice.handle, normalized.treatment.highFrequencyGain)
+            adapter.setLowPass(voice.handle, voice.treatment.highFrequencyGain)
+            adapter.setReverb(voice.handle, voice.treatment.reverbSend)
         }
         adapter.setVanillaMusicSuppressed(true)
         return if (voices.isEmpty()) PlaybackUpdateResult.SILENT else PlaybackUpdateResult.CONTINUING
@@ -129,7 +132,7 @@ class PlaybackController(private val adapter: AudioAdapter) {
             voices.forEach { voice -> adapter.stop(voice.handle) }
             voices.clear()
         }
-        voices += Voice(desired, handle, progress)
+        voices += Voice(desired, handle, progress, options.treatment)
         return true
     }
 
@@ -175,6 +178,7 @@ class PlaybackController(private val adapter: AudioAdapter) {
         treatment = AudioTreatment(
             gainMultiplier = treatment.gainMultiplier.coerceIn(0f, 1f),
             highFrequencyGain = treatment.highFrequencyGain.coerceIn(0f, 1f),
+            reverbSend = treatment.reverbSend.coerceIn(0f, 1f),
         ),
     )
 
@@ -190,4 +194,5 @@ private class Voice(
     val track: TrackDefinition,
     val handle: AudioHandle,
     var progress: Double,
+    var treatment: AudioTreatment,
 )

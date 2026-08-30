@@ -176,6 +176,10 @@ object TrackCatalogParser {
             raw.shelteredAudio.maximumHighFrequencyGain in 0.0f..1.0f) {
             "$field.sheltered_audio.maximum_high_frequency_gain must be finite and from 0 through 1"
         }
+        require(raw.shelteredAudio.maximumReverbSend.isFinite() &&
+            raw.shelteredAudio.maximumReverbSend in 0.0f..1.0f) {
+            "$field.sheltered_audio.maximum_reverb_send must be finite and from 0 through 1"
+        }
 
         return EnvironmentalProfile(
             nativeUndergroundBiomes = nativeUndergroundBiomes,
@@ -206,6 +210,7 @@ object TrackCatalogParser {
             shelteredAudio = ShelteredAudioSettings(
                 maximumGainMultiplier = raw.shelteredAudio.maximumGainMultiplier,
                 maximumHighFrequencyGain = raw.shelteredAudio.maximumHighFrequencyGain,
+                maximumReverbSend = raw.shelteredAudio.maximumReverbSend,
             ),
         )
     }
@@ -348,6 +353,7 @@ private data class RawEnvironmentalThresholds(
 private data class RawShelteredAudioSettings(
     @SerialName("maximum_gain_multiplier") val maximumGainMultiplier: Float,
     @SerialName("maximum_high_frequency_gain") val maximumHighFrequencyGain: Float,
+    @SerialName("maximum_reverb_send") val maximumReverbSend: Float,
 )
 
 @Serializable

@@ -174,8 +174,9 @@
       },
       "smoothing_seconds": 2.0,
       "sheltered_audio": {
-        "maximum_gain_multiplier": 0.85,
-        "maximum_high_frequency_gain": 0.35
+        "maximum_gain_multiplier": 0.20,
+        "maximum_high_frequency_gain": 0.00,
+        "maximum_reverb_send": 0.20
       }
     }
   },
